@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#EBEEF4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A0B10" media="(prefers-color-scheme: dark)">
+<title>Weekly Timetable</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%229%22 fill=%22%231A1D2B%22/%3E%3Crect x=%225%22 y=%226.4%22 width=%2222%22 height=%222.6%22 rx=%221.3%22 fill=%22%239097B2%22/%3E%3Crect x=%225%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%23B99BFF%22/%3E%3Crect x=%2213%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%2374ACFF%22/%3E%3Crect x=%2221%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%234FD6A5%22/%3E%3Crect x=%225%22 y=%2219.8%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%2374ACFF%22/%3E%3Crect x=%2221%22 y=%2219.8%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%23B99BFF%22/%3E%3Crect x=%2213.5%22 y=%2220.3%22 width=%225%22 height=%225%22 rx=%221.6%22 fill=%22none%22 stroke=%22%239097B2%22 stroke-width=%221%22 stroke-dasharray=%222 1.5%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Readex+Pro:wght@300..700&display=swap" rel="stylesheet">
+<style>
+/* ---------- theme tokens: light by default, dark when the system asks for it ---------- */
+:root{
+  color-scheme:light dark;
+  --bg:#EBEEF4; --node-bg:#EBEEF4; --solid:#F6F7FA;
+  --text:#14172A; --muted:#566079; --mark:#FFFFFF;
+  --fg:20,24,44;                                   /* ink colour as r,g,b: used for hairlines and soft fills */
+  --glass:rgba(255,255,255,.62);
+  --edge:rgba(var(--fg),.09); --line:rgba(var(--fg),.13);
+  --hi:rgba(255,255,255,.85);                      /* top-edge highlight on glass */
+  --shadow:0 20px 40px -26px rgba(30,40,80,.4);
+  --cell-pct:100%; --cell-hi:rgba(255,255,255,.35);
+  --grain-op:.07; --grain-blend:multiply;
+  --lecture:#2D6BDC; --directed:#7448DD; --lab:#087F5F;
+  --font:'Bricolage Grotesque','Readex Pro',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0A0B10; --node-bg:#0E1018; --solid:#171925;
+    --text:#ECEEF6; --muted:#8E94AA; --mark:#0A0B10;
+    --fg:255,255,255;
+    --glass:rgba(255,255,255,.05);
+    --hi:rgba(255,255,255,.07);
+    --shadow:0 24px 48px -26px rgba(0,0,0,.75);
+    --cell-pct:86%; --cell-hi:rgba(255,255,255,.2);
+    --grain-op:.11; --grain-blend:overlay;
+    --lecture:#7FB0FF; --directed:#B9A2FF; --lab:#5FD9AF;
+  }
+}
+html[lang="ar"]{--font:'Readex Pro','Segoe UI',Tahoma,'Noto Sans Arabic','Noto Naskh Arabic',system-ui,sans-serif}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.4;
+  min-height:100vh;isolation:isolate;-webkit-text-size-adjust:100%;
+  padding:max(18px,env(safe-area-inset-top)) 16px max(48px,env(safe-area-inset-bottom));
+}
+.wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;display:grid;gap:14px}
+:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* fine grain over everything is what makes the glass read as matte, not shiny */
+.grain{
+  position:fixed;inset:0;z-index:5;pointer-events:none;opacity:var(--grain-op);mix-blend-mode:var(--grain-blend);
+  background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* type colours + shapes (shape repeats the colour so it never relies on colour alone) */
+.t-lecture{--c:var(--lecture)}
+.t-directed{--c:var(--directed)}
+.t-lab{--c:var(--lab)}
+.mark{display:block;width:9px;height:9px;background:var(--c);border-radius:50%;flex:none}
+.t-directed .mark{border-radius:2.5px}
+.t-lab .mark{border-radius:1.5px;transform:rotate(45deg) scale(.92)}
+
+/* header */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--hi)}
+.hright{display:flex;align-items:center;gap:12px}
+header p{color:var(--muted);font-size:15px;font-weight:560;text-align:end;white-space:nowrap}
+.seg{direction:ltr;display:flex;gap:2px;padding:3px;border-radius:12px;background:var(--glass);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--hi)}
+.seg button{
+  appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:650;
+  min-width:36px;padding:6px 9px;border-radius:9px;cursor:pointer;transition:background .15s,color .15s,transform .12s;
+}
+.seg button[aria-pressed="true"]{background:rgba(var(--fg),.1);color:var(--text)}
+.seg button:active{transform:scale(.94)}
+
+/* glass surfaces */
+.now,.panel,.card{
+  background:var(--glass);border:1px solid var(--edge);
+  -webkit-backdrop-filter:blur(26px) saturate(125%);backdrop-filter:blur(26px) saturate(125%);
+  box-shadow:inset 0 1px 0 var(--hi),var(--shadow);
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .now,.panel,.card{background:var(--solid)}
+}
+
+/* now card */
+.now{--c:var(--muted);display:grid;gap:8px;padding:14px 16px 15px;border-radius:22px}
+.now.t-lecture{--c:var(--lecture)}
+.now.t-directed{--c:var(--directed)}
+.now.t-lab{--c:var(--lab)}
+.now .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.now[data-live]{
+  background:color-mix(in srgb,var(--c) 15%,var(--glass));
+  border-color:color-mix(in srgb,var(--c) 45%,var(--edge));
+}
+.status{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:650;color:var(--muted)}
+.now[data-live] .status{color:var(--text)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.now[data-live] .dot{animation:pulse 2.2s ease-in-out infinite}
+.now[data-live="soon"] .dot{animation-duration:1.3s}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 55%,transparent)}50%{box-shadow:0 0 0 7px transparent}}
+.now h2{font-size:21px;line-height:1.18;font-weight:720;letter-spacing:-.015em;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:14px;color:var(--muted)}
+.count{display:flex;align-items:baseline;gap:7px}
+.count b{font-size:28px;line-height:1;font-weight:720;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.count span{font-size:13.5px;color:var(--muted)}
+.progress{height:6px;border-radius:99px;background:color-mix(in srgb,var(--c) 22%,transparent);overflow:hidden}
+.progress i{display:block;height:100%;border-radius:inherit;background:var(--c)}
+.then{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;padding-top:9px;margin-top:2px;border-top:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+.then-what{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px}
+.then-what b{font-size:14.5px;line-height:1.3;color:var(--text);font-weight:650}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:620;color:var(--text)}
+.room{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--muted)}
+.room svg{flex:none}
+.room-t{direction:ltr;unicode-bidi:isolate;text-transform:uppercase;letter-spacing:.05em;font-size:12.5px;font-weight:620}
+
+/* day view */
+.dayhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 4px 10px}
+.dayhead h3{font-size:20px;font-weight:720;letter-spacing:-.015em;display:flex;align-items:center;gap:10px}
+.today-pill{font-size:12.5px;font-weight:650;padding:2px 10px;border-radius:99px;background:var(--text);color:var(--bg)}
+.stats{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);white-space:nowrap}
+.stats b{color:var(--text);font-weight:650}
+.stats i{width:1px;height:13px;background:var(--line)}
+.stats .rng{font-variant-numeric:tabular-nums}
+.list{list-style:none;display:grid}
+.list.swap{animation:swapIn .2s ease both}
+@keyframes swapIn{from{opacity:0;transform:translateY(5px)}}
+.item{display:grid;grid-template-columns:54px 22px 1fr;column-gap:8px;padding-bottom:9px}
+.time{text-align:end;padding-top:10px}
+.time b{display:block;font-size:16px;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums}
+.time span{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rail{position:relative}
+.rail::before{content:"";position:absolute;left:50%;top:0;bottom:-9px;width:2px;translate:-50% 0;background:var(--line)}
+.item:first-child .rail::before{top:19px}
+.item:last-child .rail::before{bottom:auto;height:19px}
+.node{position:absolute;left:50%;top:13px;translate:-50% 0;width:13px;height:13px;display:grid;place-items:center}
+.node .mark{width:11px;height:11px}
+.t-lab .node .mark{width:9px;height:9px;transform:rotate(45deg)}
+.item.free .node .mark{background:var(--node-bg);border:2px solid rgba(var(--fg),.24);border-radius:50%;width:11px;height:11px;transform:none}
+.card{display:grid;gap:5px;padding:10px 13px 11px;border-radius:16px;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card h4{font-size:16px;line-height:1.25;font-weight:660;letter-spacing:-.01em;text-wrap:balance}
+.card-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px}
+.card-bar{height:4px;border-radius:99px;margin-top:3px;overflow:hidden;background:color-mix(in srgb,var(--c) 22%,transparent)}
+.card-bar i{display:block;height:100%;border-radius:inherit;background:var(--c)}
+.pill{flex:none;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:99px;background:var(--c);color:var(--mark)}
+.pill-soon{background:transparent;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 60%,transparent);padding:1px 9px;font-variant-numeric:tabular-nums}
+.freebody{padding-top:9px;font-size:15px;color:var(--muted)}
+.item.live .card{background:color-mix(in srgb,var(--c) 15%,var(--glass));border-color:color-mix(in srgb,var(--c) 45%,var(--edge))}
+.item.soon .card{background:color-mix(in srgb,var(--c) 8%,var(--glass));border-color:color-mix(in srgb,var(--c) 55%,var(--edge))}
+.item.live.free .freebody{color:var(--text);font-weight:620}
+.item.past .card,.item.past .time,.item.past .freebody{opacity:.5}
+
+/* week overview */
+.panel{border-radius:26px;padding:12px 12px 16px}
+.week{display:grid;grid-template-columns:auto repeat(var(--cols,5),1fr);column-gap:4px}
+.times,.col{display:grid;grid-template-rows:30px repeat(var(--rows,5),32px);row-gap:6px;padding:8px 4px}
+.times{padding-inline:2px 6px}
+.tl{align-self:center;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.col{appearance:none;border:0;background:transparent;color:inherit;font:inherit;border-radius:16px;cursor:pointer;transition:background .15s,transform .12s}
+.col:hover{background:rgba(var(--fg),.04)}
+.col:active{transform:scale(.97)}
+.col[aria-pressed="true"]{background:rgba(var(--fg),.075);box-shadow:inset 0 0 0 1px rgba(var(--fg),.09)}
+.dlabel{align-self:start;text-align:center;font-size:14px;font-weight:680;line-height:1.2;padding-top:2px}
+.dlabel[data-today]::after{content:"";display:block;width:5px;height:5px;border-radius:50%;background:var(--text);margin:3px auto 0}
+.cell{display:grid;place-items:center;border-radius:10px;background:color-mix(in srgb,var(--c) var(--cell-pct),#000);box-shadow:inset 0 1px 0 var(--cell-hi)}
+.cell .mark{background:var(--mark);width:8px;height:8px;opacity:.85}
+.cell.free{background:transparent;border:1.5px dashed rgba(var(--fg),.24);box-shadow:none}
+.cell.off{background:rgba(var(--fg),.04);box-shadow:none}
+.cell.live{outline:2px solid var(--text);outline-offset:2px}
+.cell.soon{outline:2px dashed var(--text);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin:6px 6px 0;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend .swatch{width:12px;height:12px;border-radius:4px;border:1.5px dashed rgba(var(--fg),.28)}
+
+/* Arabic: taller lines, a touch bigger, and no letter-spacing (it breaks the joins between letters) */
+html[lang="ar"] body{line-height:1.5}
+html[lang="ar"] :not(.room-t){letter-spacing:normal!important}
+html[lang="ar"] .now h2{font-size:22px;line-height:1.4}
+html[lang="ar"] .card h4{font-size:17px;line-height:1.45}
+html[lang="ar"] .dayhead h3{font-size:21px}
+html[lang="ar"] .count b{line-height:1.2}
+
+@media (prefers-reduced-motion:reduce){
+  .now[data-live] .dot{animation:none}
+  .list.swap{animation:none}
+  .col,.seg button{transition:none}
+  .col:active,.seg button:active{transform:none}
+}
+
+/* editor */
+:root{--danger:#C23A36}
+@media (prefers-color-scheme:dark){:root{--danger:#FF8F8A}}
+.hright{gap:10px}
+.iconbtn{appearance:none;flex:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;cursor:pointer;color:var(--muted);background:var(--glass);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--hi);transition:transform .12s,color .15s}
+.iconbtn:hover{color:var(--text)}
+.iconbtn:active{transform:scale(.94)}
+.sheet{position:fixed;inset:0;z-index:3}
+.sheet-bg{position:absolute;inset:0;background:rgba(5,6,12,.5)}
+.sheet-panel{
+  position:absolute;left:50%;bottom:0;translate:-50% 0;width:min(560px,100%);max-height:92vh;max-height:92dvh;overflow:auto;overscroll-behavior:contain;
+  background:var(--bg);border:1px solid var(--edge);border-bottom:0;border-radius:26px 26px 0 0;
+  padding:0 16px max(26px,env(safe-area-inset-bottom));box-shadow:0 -20px 50px -20px rgba(0,0,0,.5);animation:sheetIn .25s ease both;
+}
+@keyframes sheetIn{from{transform:translateY(24px);opacity:0}}
+.sheet-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0 12px;background:var(--bg)}
+.sheet-head h2{font-size:20px;font-weight:720}
+.done{appearance:none;border:0;cursor:pointer;font:inherit;font-size:14.5px;font-weight:680;padding:8px 18px;border-radius:99px;background:var(--text);color:var(--bg)}
+.dpick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.dbtn{appearance:none;cursor:pointer;font:inherit;font-size:14px;font-weight:650;padding:9px 0;border-radius:12px;color:var(--muted);background:var(--glass);border:1px solid var(--edge)}
+.dbtn[aria-pressed="true"]{color:var(--text);background:rgba(var(--fg),.1)}
+.elist{display:grid;gap:10px}
+.erow{display:grid;gap:8px;padding:12px;border-radius:16px;background:var(--glass);border:1px solid var(--edge)}
+.erow-head,.erow-sub{display:flex;align-items:center;gap:8px}
+.erow-head .field,.erow-sub .field{flex:1;min-width:0}
+.erow-times{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr);align-items:center}
+.erow-times .etime{min-width:0}
+.erow-times .field{min-width:0;padding-inline:8px}
+.erow-times .enote{grid-column:1/-1}
+.etime{font-size:14px;font-weight:680;font-variant-numeric:tabular-nums;min-width:92px;direction:ltr;unicode-bidi:isolate;text-align:start}
+.field{
+  width:100%;appearance:none;-webkit-appearance:none;font:inherit;font-size:15px;color:var(--text);min-height:40px;
+  background:rgba(var(--fg),.06);border:1px solid var(--edge);border-radius:12px;padding:9px 12px;
+}
+select.field{
+  padding-inline-end:34px;cursor:pointer;background-repeat:no-repeat;background-position:right 12px center;
+  background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238E94AA' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+html[dir="rtl"] select.field{background-position:left 12px center}
+select option{background:var(--solid);color:var(--text)}
+.field.bad{border-color:var(--danger)}
+.ghost{appearance:none;cursor:pointer;font:inherit;font-size:14px;font-weight:620;padding:9px 14px;border-radius:12px;color:var(--text);background:transparent;border:1px dashed rgba(var(--fg),.28)}
+.ghost.small{padding:6px 12px;font-size:13px;justify-self:start}
+.ghost.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
+.ghost:disabled{opacity:.5;cursor:default}
+.elist + .ghost{margin-top:10px}
+.iconx{appearance:none;flex:none;width:36px;height:36px;border-radius:10px;border:1px solid var(--edge);background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.esec{font-size:16px;font-weight:700;margin:22px 2px 10px}
+.enote{font-size:13px;color:var(--muted);line-height:1.5}
+.emsg{font-size:13.5px;margin-bottom:10px;padding:8px 12px;border-radius:12px;background:rgba(var(--fg),.06)}
+.emsg:empty{display:none}
+.ebackup{margin-top:20px}
+.ebackup summary{cursor:pointer;font-weight:650;padding:6px 2px}
+.ebackup .elist{margin-top:8px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;direction:ltr;resize:vertical}
+.efoot{display:grid;gap:12px;margin-top:20px;justify-items:start}
+@media (prefers-reduced-motion:reduce){.sheet-panel{animation:none}.iconbtn{transition:none}}
+
+/* blank version extras */
+.week.dense .dlabel{font-size:12.5px}
+.week.dense .col{padding-inline:2px}
+.empty{--c:var(--muted);padding:20px;gap:10px}
+.empty h2{font-size:21px;font-weight:720;line-height:1.25}
+.empty p{font-size:14.5px;line-height:1.6;color:var(--muted)}
+.empty .done{justify-self:start;margin-top:4px}
+html[lang="ar"] .empty h2{font-size:22px;line-height:1.4}
+.esection{margin-top:14px;border-radius:16px;border:1px solid var(--edge);background:var(--glass)}
+.esection>summary{cursor:pointer;font-size:16px;font-weight:700;padding:14px}
+.esbody{padding:0 12px 12px;display:grid;gap:12px}
+.esbody .enote.lead{margin-bottom:-4px}
+.dchips{display:flex;flex-wrap:wrap;gap:8px}
+.dchip{appearance:none;cursor:pointer;font:inherit;font-size:14px;font-weight:620;padding:8px 14px;border-radius:99px;color:var(--muted);background:transparent;border:1px solid var(--edge)}
+.dchip[aria-pressed="true"]{color:var(--text);background:rgba(var(--fg),.1);border-color:rgba(var(--fg),.22)}
+.esubh{font-size:14px;font-weight:680;margin-top:4px}
+.esec.plain{margin-top:22px}
+.ebackup{margin-top:14px}
+.ebackup .esbody{padding-top:0}
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<main class="wrap" id="wrap">
+  <header>
+    <h1 class="sr" id="sr-title">Weekly timetable</h1>
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="4 5.2 24 21.6" width="30" height="27"><rect x="5" y="6.4" width="22" height="2.6" rx="1.3" fill="var(--text)"/><rect x="5" y="12.4" width="6" height="6" rx="2" fill="var(--directed)"/><rect x="13" y="12.4" width="6" height="6" rx="2" fill="var(--lecture)"/><rect x="21" y="12.4" width="6" height="6" rx="2" fill="var(--lab)"/><rect x="5" y="19.8" width="6" height="6" rx="2" fill="var(--lecture)"/><rect x="21" y="19.8" width="6" height="6" rx="2" fill="var(--directed)"/><rect x="13.5" y="20.3" width="5" height="5" rx="1.6" fill="none" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 1.5"/></svg>
+    </div>
+    <div class="hright">
+      <p id="today-date"></p>
+      <div class="seg" role="group" id="seg" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ar" aria-pressed="false" lang="ar">ع</button>
+      </div>
+      <button type="button" class="iconbtn" id="edit-btn">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14.5 7.5l3 3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section id="empty" class="now empty" hidden>
+    <h2 id="empty-title"></h2>
+    <p id="empty-text"></p>
+    <button type="button" class="done" id="empty-btn"></button>
+  </section>
+
+  <section id="now" class="now">
+    <div class="top">
+      <div class="status"><i class="dot"></i><span id="now-status"></span></div>
+      <div class="count" id="now-count" hidden><b id="count-val"></b><span id="count-label"></span></div>
+    </div>
+    <h2 id="now-title"></h2>
+    <div class="meta" id="now-meta"></div>
+    <div class="progress" id="now-bar" aria-hidden="true" hidden><i id="now-fill"></i></div>
+    <p class="then" id="now-then" hidden></p>
+  </section>
+
+  <section id="sec-day">
+    <div class="dayhead" id="dayhead"></div>
+    <ol class="list" id="list"></ol>
+  </section>
+
+  <section class="panel" id="sec-week">
+    <div class="week" id="week"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-bg" id="sheet-bg"></div>
+  <div class="sheet-panel" id="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-head">
+      <h2 id="sheet-title"></h2>
+      <button type="button" class="done" id="sheet-done"></button>
+    </div>
+    <div id="sheet-body"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- text: everything the page says lives here, in both languages ---------- */
+const AR_DAYS = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const AR_MONTHS = ["جانفي","فيفري","مارس","أفريل","ماي","جوان","جويلية","أوت","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+
+const I18N = {
+  en: {
+    dir:"ltr", appTitle:"Weekly timetable", language:"Language", langSwitch:"Language",
+    empty:{ title:"Your timetable is empty", text:"Choose your days and time slots, add your subjects, then fill in your classes. It only takes a few minutes.", start:"Set up my timetable" },
+    edit:{
+      setupTitle:"Days and time slots", daysTitle:"Days with classes", daysHelp:"Tap to switch a day on or off.",
+      addTime:"Add time slot", removeTime:"Remove last time slot", needDay:"Keep at least one day.", classesTitle:"Classes",
+      open:"Edit timetable", title:"Edit timetable", done:"Done", day:"Day", type:"Type",
+      addSlot:"Add slot", removeSlot:"Remove this slot",
+      subject:"Subject", second:"Second subject", addSecond:"Add a second subject", removeSecond:"Remove second subject",
+      room:"Room", roomPh:"Room, e.g. Hall 3", needSubject:"Add a subject below first.",
+      subjectsTitle:"Subjects", nameEn:"English name", nameAr:"Arabic name", addSubject:"Add subject", delete:"Delete", inUse:"In use",
+      timesTitle:"Time slots", start:"Start time", end:"End time", badTime:"The end time must be after the start time.",
+      backup:"Backup and restore", backupHelp:"Copy this text somewhere safe to keep a backup. To restore, paste it here and tap Load.", load:"Load",
+      loadOk:"Backup loaded.", loadBad:"That text isn't a valid timetable.",
+      reset:"Reset to default", resetConfirm:"Tap again to confirm", resetDone:"Timetable reset to default.",
+      autosave:"Changes save automatically on this device.", noSave:"This browser isn't saving changes. Use the backup below to keep them."
+    },
+    secDay:"Day schedule", secWeek:"Week overview",
+    types:{ lecture:"Lecture", directed:"Directed work", lab:"Lab work" },
+    days:{ sat:["Saturday","Sat"], sun:["Sunday","Sun"], mon:["Monday","Mon"], tue:["Tuesday","Tue"], wed:["Wednesday","Wed"], thu:["Thursday","Thu"], fri:["Friday","Fri"] },
+    free:"Free slot", today:"Today", tomorrow:"Tomorrow",
+    now:"Now", soon:"Starting soon", nextUp:"Next up", done:"Done for today", dayOff:"Day off",
+    freeUntil:t => "Free until " + t, noMore:"No more classes today", noClasses:"No classes today",
+    until:t => "Until " + t, startsAt:t => "Starts at " + t, left:"left", toStart:"to start",
+    next:(when, t) => "Next " + (when ? when + ", " : "") + t,
+    inMin:n => "In " + n + " min", startsIn:c => "Starts in " + c,
+    unit:{ h:"h", m:"min" },
+    classCount:n => [String(n), n === 1 ? " class" : " classes"],
+    colLabel:(name, n) => name + ", " + n + " classes",
+    date:d => d.toLocaleDateString("en-GB", { weekday:"short", day:"numeric", month:"short" }),
+  },
+  ar: {
+    dir:"rtl", appTitle:"الجدول الأسبوعي", language:"اللغة", langSwitch:"اللغة",
+    empty:{ title:"جدولك فارغ", text:"اختر أيامك وأوقات الحصص، ثم أضف موادك، وبعدها املأ حصصك. لن يستغرق الأمر سوى دقائق.", start:"إعداد الجدول" },
+    edit:{
+      setupTitle:"الأيام وأوقات الحصص", daysTitle:"أيام الدراسة", daysHelp:"اضغط لتفعيل اليوم أو إلغائه.",
+      addTime:"إضافة وقت حصة", removeTime:"حذف آخر وقت", needDay:"أبقِ يوماً واحداً على الأقل.", classesTitle:"الحصص",
+      open:"تعديل الجدول", title:"تعديل الجدول", done:"تم", day:"اليوم", type:"النوع",
+      addSlot:"إضافة حصة", removeSlot:"حذف هذه الحصة",
+      subject:"المادة", second:"المادة الثانية", addSecond:"إضافة مادة ثانية", removeSecond:"حذف المادة الثانية",
+      room:"القاعة", roomPh:"القاعة، مثل Hall 3", needSubject:"أضف مادة أولاً من الأسفل.",
+      subjectsTitle:"المواد", nameEn:"الاسم بالإنجليزية", nameAr:"الاسم بالعربية", addSubject:"إضافة مادة", delete:"حذف", inUse:"قيد الاستخدام",
+      timesTitle:"أوقات الحصص", start:"وقت البدء", end:"وقت الانتهاء", badTime:"يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+      backup:"نسخة احتياطية واستعادة", backupHelp:"انسخ هذا النص واحفظه كنسخة احتياطية. للاستعادة، الصقه هنا ثم اضغط تحميل.", load:"تحميل",
+      loadOk:"تم تحميل النسخة الاحتياطية.", loadBad:"هذا النص ليس جدولاً صالحاً.",
+      reset:"إعادة الضبط الافتراضي", resetConfirm:"اضغط مرة أخرى للتأكيد", resetDone:"تمت إعادة الجدول إلى الوضع الافتراضي.",
+      autosave:"تُحفظ التغييرات تلقائياً على هذا الجهاز.", noSave:"هذا المتصفح لا يحفظ التغييرات. استخدم النسخة الاحتياطية أدناه للاحتفاظ بها."
+    },
+    secDay:"جدول اليوم", secWeek:"نظرة على الأسبوع",
+    types:{ lecture:"محاضرة", directed:"أعمال موجهة", lab:"أعمال تطبيقية" },
+    days:{ sat:["السبت","سبت"], sun:["الأحد","أحد"], mon:["الاثنين","اثنين"], tue:["الثلاثاء","ثلاثاء"], wed:["الأربعاء","أربعاء"], thu:["الخميس","خميس"], fri:["الجمعة","جمعة"] },
+    free:"فترة فراغ", today:"اليوم", tomorrow:"غداً",
+    now:"الآن", soon:"تبدأ قريباً", nextUp:"الحصة التالية", done:"انتهى اليوم", dayOff:"يوم عطلة",
+    freeUntil:t => "فراغ حتى " + t, noMore:"لا توجد حصص أخرى اليوم", noClasses:"لا توجد حصص اليوم",
+    until:t => "حتى " + t, startsAt:t => "تبدأ الساعة " + t, left:"متبقي", toStart:"حتى البدء",
+    next:(when, t) => "التالية " + (when ? when + "، " : "") + t,
+    inMin:n => "بعد " + n + " د", startsIn:c => "تبدأ بعد " + c,
+    unit:{ h:"س", m:"د" },
+    classCount:n => n >= 3 ? [String(n), " حصص"] : n === 2 ? ["حصتان", ""] : n === 1 ? ["حصة واحدة", ""] : ["لا حصص", ""],
+    colLabel:(name, n) => name + "، " + n + " حصص",
+    date:d => AR_DAYS[d.getDay()] + "، " + d.getDate() + " " + AR_MONTHS[d.getMonth()],
+  }
+};
+
+/* ---------- data: the defaults (everything can also be edited from the pencil button) ---------- */
+const TYPE_KEYS = ["lecture","directed","lab"];
+const LEC="lecture", DIR="directed", LAB="lab";
+const SOON = 15;   // minutes before a class when the "starting soon" countdown appears
+const DAY_META = [{id:"sat",dow:6},{id:"sun",dow:0},{id:"mon",dow:1},{id:"tue",dow:2},{id:"wed",dow:3},{id:"thu",dow:4},{id:"fri",dow:5}];
+const DAY_IDS = DAY_META.map(d => d.id);
+
+/* the blank starting point: nothing but sensible time slots and Sunday to Thursday switched on */
+const DEFAULT_DATA = {
+  v:2,
+  times:[["08:00","09:30"],["09:40","11:10"],["11:20","12:50"],["13:00","14:30"],["14:40","16:10"]],
+  subjects:{},
+  active:["sun","mon","tue","wed","thu"],
+  /* a slot is [subject keys, type, room]; null = free slot; a day has only as many slots as it lists */
+  days:{ sat:[], sun:[], mon:[], tue:[], wed:[], thu:[], fri:[] }
+};
+let SLOTS = [], DAYS = [], DATA = null;
+
+/* ---------- language state ---------- */
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
+};
+let lang = (() => {
+  const saved = store.get("ttb-lang");
+  if (saved === "en" || saved === "ar") return saved;
+  return (navigator.language || "en").toLowerCase().startsWith("ar") ? "ar" : "en";
+})();
+const T = () => I18N[lang];
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const toM = t => { const [h,m] = t.split(":").map(Number); return h*60+m; };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const fmtDur = m => {
+  const u = T().unit;
+  if (m < 60) return m + " " + u.m;
+  const h = Math.floor(m/60), r = m%60;
+  return r ? h + " " + u.h + " " + String(r).padStart(2,"0") + " " + u.m : h + " " + u.h;
+};
+const fmtClock = s => Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");          // 4:32
+const fmtLeft = s => s < 600 ? fmtClock(s) : fmtDur(Math.ceil(s/60));                // 4:32, then "1 h 15 min"
+const bar = (f, len = 5) => { const k = Math.round(Math.max(0, Math.min(1, f)) * len); return "▰".repeat(k) + "▱".repeat(len - k); };
+const pct = f => Math.max(0, Math.min(100, f * 100)) + "%";
+const nowInfo = () => {
+  const d = new Date(), mins = d.getHours()*60 + d.getMinutes();
+  return { dow:d.getDay(), mins, secs:mins*60 + d.getSeconds(), date:d };
+};
+
+/* ---------- loading, checking and building the timetable ---------- */
+const clone = o => JSON.parse(JSON.stringify(o));
+const HHMM = /^\d\d:\d\d$/;
+function normalize(d){ DAY_IDS.forEach(id => d.days[id].forEach(sl => { if (sl) sl[0] = [].concat(sl[0]); })); return d; }
+function validData(d){
+  if (!d || d.v !== 2 || !Array.isArray(d.times) || d.times.length < 1 || d.times.length > 8) return false;
+  if (!d.times.every(t => Array.isArray(t) && HHMM.test(t[0]) && HHMM.test(t[1]))) return false;
+  if (!d.subjects || typeof d.subjects !== "object") return false;
+  if (!Object.values(d.subjects).every(v => v && typeof v.en === "string" && typeof v.ar === "string")) return false;
+  if (!Array.isArray(d.active) || !d.active.length || !d.active.every(id => DAY_IDS.includes(id))) return false;
+  return DAY_IDS.every(id => {
+    const sl = d.days && d.days[id];
+    return Array.isArray(sl) && sl.length <= d.times.length && sl.every(x => x === null ||
+      (Array.isArray(x) && x.length >= 3 && TYPE_KEYS.includes(x[1]) && typeof x[2] === "string" && [].concat(x[0]).every(k => d.subjects[k])));
+  });
+}
+const loadDefault = () => normalize(clone(DEFAULT_DATA));
+function loadData(){
+  try {
+    const raw = store.get("ttb-data");
+    if (raw){ const d = JSON.parse(raw); if (validData(d)) return normalize(d); }
+  } catch(e){}
+  return loadDefault();
+}
+const subjName = k => { const x = DATA.subjects[k]; return x ? (x[lang] || x.en || x.ar || "") : ""; };
+
+function buildModel(){
+  SLOTS = DATA.times;
+  DAYS = DAY_META.filter(m => DATA.active.includes(m.id)).map(m => {
+    const d = { id:m.id, dow:m.dow, slots:DATA.days[m.id] };
+    Object.defineProperty(d, "name",  { get(){ return T().days[d.id][0]; } });
+    Object.defineProperty(d, "short", { get(){ return T().days[d.id][1]; } });
+    d.sessions = d.slots.map((s, i) => {
+      const sess = {
+        day:d, i, start:SLOTS[i][0], end:SLOTS[i][1],
+        startM:toM(SLOTS[i][0]), endM:toM(SLOTS[i][1]),
+        subj:s ? s[0] : null, type:s ? s[1] : null, room:s ? s[2] : null
+      };
+      Object.defineProperty(sess, "title", { get(){
+        return this.subj ? (this.subj.map(subjName).filter(Boolean).join(" / ") || T().types[this.type]) : null;
+      } });
+      return sess;
+    });
+    d.real = d.sessions.filter(s => s.type);
+    return d;
+  });
+}
+DATA = loadData();
+buildModel();
+
+function chip(type){
+  const c = el("span", "chip t-" + type);
+  c.append(el("i", "mark"), document.createTextNode(T().types[type]));
+  return c;
+}
+
+const PIN = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.4-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/></svg>';
+function roomTag(room){
+  if (!room) return document.createTextNode("");
+  const r = el("span", "room");
+  r.innerHTML = PIN;                       // constant markup, no user text
+  r.append(el("span", "room-t", room));
+  return r;
+}
+
+/* the next real class after "now", looking up to a week ahead */
+function findNext(n){
+  for (let off = 0; off <= 7; off++){
+    const day = DAYS.find(d => d.dow === (n.dow + off) % 7);
+    if (!day) continue;
+    const s = day.real.find(s => off > 0 || s.startM > n.mins);
+    if (s) return { s, off };
+  }
+}
+const whenLabel = (off, day) => off === 0 ? "" : off === 1 ? T().tomorrow : day.name;
+const liveClass = (n, day) => day && day.real.find(s => s.startM <= n.mins && n.mins < s.endM);
+
+/* a class that starts within SOON minutes while nothing else is running */
+function soonSession(n){
+  const today = DAYS.find(d => d.dow === n.dow);
+  if (!today || liveClass(n, today)) return null;
+  const nx = findNext(n);
+  return nx && nx.off === 0 && nx.s.startM*60 - n.secs <= SOON*60 ? nx.s : null;
+}
+
+/* ---------- state ---------- */
+function defaultDay(n){
+  const ti = DAYS.findIndex(d => d.dow === n.dow);
+  if (ti >= 0 && DAYS[ti].real.length && n.mins < DAYS[ti].real[DAYS[ti].real.length-1].endM) return ti;
+  const nx = findNext(n);
+  return nx ? DAYS.indexOf(nx.s.day) : Math.max(0, ti);   // today is finished or a day off: show the next school day
+}
+let selected = defaultDay(nowInfo());
+let userPicked = false;                      // until you tap a day, the page follows the clock
+let lastSelected = selected;
+
+/* ---------- week overview (rebuilt whenever the timetable is edited) ---------- */
+const weekEl = $("week");
+function buildGrid(){
+  weekEl.replaceChildren();
+  weekEl.style.setProperty("--cols", DAYS.length);
+  weekEl.style.setProperty("--rows", SLOTS.length);
+  weekEl.classList.toggle("dense", DAYS.length >= 6);
+  const times = el("div", "times");
+  times.append(el("span"));
+  SLOTS.forEach(s => times.append(el("span", "tl", s[0])));
+  weekEl.append(times);
+  DAYS.forEach((d, idx) => {
+    const b = el("button", "col");
+    b.type = "button";
+    b.append(el("span", "dlabel"));
+    for (let i = 0; i < SLOTS.length; i++){
+      const x = d.sessions[i];
+      const c = el("span", "cell");
+      if (!x) c.classList.add("off");
+      else if (!x.type) c.classList.add("free");
+      else { c.classList.add("t-" + x.type); c.append(el("i", "mark")); }
+      b.append(c);
+    }
+    b.addEventListener("click", () => {
+      selected = idx;
+      userPicked = idx !== defaultDay(nowInfo());
+      render();
+    });
+    weekEl.append(b);
+  });
+  updateGridLabels();
+}
+function updateGridLabels(){
+  weekEl.querySelectorAll(".col").forEach((b, i) => {
+    b.querySelector(".dlabel").textContent = DAYS[i].short;
+    b.setAttribute("aria-label", T().colLabel(DAYS[i].name, DAYS[i].real.length));
+  });
+}
+buildGrid();
+
+/* ---------- now card (built once in the HTML, only its content changes) ---------- */
+const nowBox = $("now"), nStatus = $("now-status"), nTitle = $("now-title"), nMeta = $("now-meta"),
+      nCount = $("now-count"), nVal = $("count-val"), nLab = $("count-label"),
+      nBar = $("now-bar"), nFill = $("now-fill"), nThen = $("now-then");
+
+function renderNow(n, soonS){
+  const t = T();
+  const today = DAYS.find(d => d.dow === n.dow);
+  const cur = liveClass(n, today) || (today && today.sessions.find(s => !s.type && s.startM <= n.mins && n.mins < s.endM));
+  const nxt = findNext(n);
+  const toStart = nxt ? nxt.s.startM*60 - n.secs : Infinity;
+
+  let type = null, mode = null, showThen = true, tabTitle = t.appTitle;
+  nMeta.replaceChildren();
+  nCount.hidden = true; nBar.hidden = true; nThen.hidden = true;
+
+  if (cur && cur.type){
+    type = cur.type; mode = "live"; showThen = true;
+    const left = cur.endM*60 - n.secs, f = (n.secs - cur.startM*60) / ((cur.endM - cur.startM)*60);
+    nStatus.textContent = t.now;
+    nTitle.textContent = cur.title;
+    nMeta.append(chip(cur.type), roomTag(cur.room), el("span", "", t.until(cur.end)));
+    nVal.textContent = fmtLeft(left); nLab.textContent = t.left; nCount.hidden = false;
+    nFill.style.width = pct(f); nBar.hidden = false;
+    tabTitle = bar(f) + " " + fmtLeft(left) + " · " + cur.title;
+  } else if (soonS){
+    type = soonS.type; mode = "soon"; showThen = false;
+    const f = 1 - toStart / (SOON*60);
+    nStatus.textContent = t.soon;
+    nTitle.textContent = soonS.title;
+    nMeta.append(chip(soonS.type), roomTag(soonS.room), el("span", "", t.startsAt(soonS.start)));
+    nVal.textContent = fmtClock(toStart); nLab.textContent = t.toStart; nCount.hidden = false;
+    nFill.style.width = pct(f); nBar.hidden = false;
+    tabTitle = t.startsIn(fmtClock(toStart)) + " · " + soonS.title;
+  } else if (cur){
+    nStatus.textContent = t.free;
+    nTitle.textContent = t.freeUntil(cur.end);
+  } else if (today && nxt && nxt.off === 0){
+    type = nxt.s.type; showThen = false;
+    nStatus.textContent = t.nextUp;
+    nTitle.textContent = nxt.s.title;
+    nMeta.append(chip(nxt.s.type), roomTag(nxt.s.room), el("span", "", t.startsAt(nxt.s.start)));
+    nVal.textContent = fmtDur(Math.ceil(toStart/60)); nLab.textContent = t.toStart; nCount.hidden = false;
+  } else if (today){
+    nStatus.textContent = t.done;
+    nTitle.textContent = t.noMore;
+  } else {
+    nStatus.textContent = t.dayOff;
+    nTitle.textContent = t.noClasses;
+  }
+
+  TYPE_KEYS.forEach(k => nowBox.classList.toggle("t-" + k, k === type));
+  if ((nowBox.dataset.live || "") !== (mode || "")){ if (mode) nowBox.dataset.live = mode; else delete nowBox.dataset.live; }
+
+  if (showThen && nxt){
+    const what = el("span", "then-what");
+    what.append(el("b", "", nxt.s.title), chip(nxt.s.type), roomTag(nxt.s.room));
+    nThen.replaceChildren(el("span", "then-when", t.next(whenLabel(nxt.off, nxt.s.day), nxt.s.start)), what);
+    nThen.hidden = false;
+  }
+  document.title = tabTitle;
+}
+
+function updateGrid(n, soonS){
+  weekEl.querySelectorAll(".col").forEach((b, idx) => {
+    const d = DAYS[idx];
+    b.setAttribute("aria-pressed", String(idx === selected));
+    b.querySelector(".dlabel").toggleAttribute("data-today", d.dow === n.dow);
+    b.querySelectorAll(".cell").forEach((c, i) => {
+      const s = d.sessions[i];
+      c.classList.toggle("live", !!s && d.dow === n.dow && n.mins >= s.startM && n.mins < s.endM);
+      c.classList.toggle("soon", !!s && s === soonS);
+    });
+  });
+}
+
+/* ---------- day timeline (rebuilt only when something changes, bars update in place) ---------- */
+let dayKey = null, dyn = {};
+function renderDay(n, soonS){
+  const t = T();
+  const day = DAYS[selected];
+  const isToday = day.dow === n.dow;
+  const states = day.sessions.map(s => !isToday ? "-" : n.mins >= s.endM ? "p" : n.mins >= s.startM ? "l" : s === soonS ? "s" : "-");
+  const key = lang + selected + (isToday ? "T" : "") + states.join("");
+
+  if (key !== dayKey){
+    dayKey = key; dyn = {};
+    const head = $("dayhead");
+    const h3 = el("h3", "", day.name);
+    if (isToday) h3.append(el("span", "today-pill", t.today));
+    const first = day.real[0], last = day.real[day.real.length-1];
+    const [num, word] = t.classCount(day.real.length);
+    const count = el("span");
+    count.append(el("b", "", num), word);
+    const stats = el("div", "stats");
+    stats.append(count);
+    if (first) stats.append(el("i"), el("span", "rng", first.start + "–" + last.end));
+    head.replaceChildren(h3, stats);
+
+    const list = $("list");
+    list.replaceChildren();
+    if (selected !== lastSelected){                 // a short fade only when you switch day
+      list.classList.remove("swap"); void list.offsetWidth; list.classList.add("swap");
+      lastSelected = selected;
+    }
+    day.sessions.forEach((s, i) => {
+      const st = states[i];
+      const li = el("li", "item" + (s.type ? " t-" + s.type : " free") + (st === "p" ? " past" : "") + (st === "l" ? " live" : "") + (st === "s" ? " soon" : ""));
+      if (st === "l") li.setAttribute("aria-current", "true");
+
+      const time = el("div", "time");
+      time.append(el("b", "", s.start), el("span", "", s.end));
+      const rail = el("div", "rail");
+      const node = el("span", "node");
+      node.append(el("i", "mark"));
+      rail.append(node);
+
+      let body;
+      if (s.type){
+        body = el("div", "card");
+        const top = el("div", "card-top");
+        top.append(el("h4", "", s.title));
+        if (st === "l") top.append(el("span", "pill", t.now));
+        if (st === "s"){ dyn.pill = el("span", "pill pill-soon"); dyn.soon = s; top.append(dyn.pill); }
+        const row = el("div", "card-row");
+        row.append(chip(s.type), roomTag(s.room));
+        body.append(top, row);
+        if (st === "l"){
+          const track = el("div", "card-bar"); dyn.fill = el("i"); dyn.live = s;
+          track.append(dyn.fill); body.append(track);
+        }
+      } else {
+        body = el("div", "freebody", t.free);
+      }
+      li.append(time, rail, body);
+      list.append(li);
+    });
+  }
+
+  if (dyn.fill) dyn.fill.style.width = pct((n.secs - dyn.live.startM*60) / ((dyn.live.endM - dyn.live.startM)*60));
+  if (dyn.pill) dyn.pill.textContent = t.inMin(Math.max(1, Math.ceil((dyn.soon.startM*60 - n.secs) / 60)));
+}
+
+/* ---------- language switching ---------- */
+function renderLegend(){
+  const L = $("legend"), t = T();
+  L.replaceChildren();
+  TYPE_KEYS.forEach(k => {
+    const sp = el("span", "t-" + k);
+    sp.append(el("i", "mark"), document.createTextNode(t.types[k]));
+    L.append(sp);
+  });
+  const f = el("span");
+  f.append(el("i", "swatch"), document.createTextNode(t.free));
+  L.append(f);
+}
+
+function renderEmpty(){
+  const e = T().empty;
+  $("empty-title").textContent = e.title;
+  $("empty-text").textContent = e.text;
+  $("empty-btn").textContent = e.start;
+}
+
+function applyLang(){
+  const t = T();
+  document.documentElement.lang = lang;
+  document.documentElement.dir = t.dir;
+  $("sr-title").textContent = t.appTitle;
+  $("seg").setAttribute("aria-label", t.language);
+  $("sec-day").setAttribute("aria-label", t.secDay);
+  $("sec-week").setAttribute("aria-label", t.secWeek);
+  $("seg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  updateGridLabels();
+  $("edit-btn").setAttribute("aria-label", t.edit.open);
+  $("edit-btn").title = t.edit.open;
+  renderLegend();
+  renderEmpty();
+  if (!sheet.hidden) renderEditor();
+  dayKey = null;                              // force the day list to rebuild in the new language
+  render();
+}
+
+$("seg").addEventListener("click", e => {
+  const b = e.target.closest("button[data-lang]");
+  if (!b || b.dataset.lang === lang) return;
+  lang = b.dataset.lang;
+  store.set("ttb-lang", lang);
+  applyLang();
+});
+
+/* ---------- editor ---------- */
+const sheet = $("sheet"), sheetPanel = $("sheet-panel"), sheetBody = $("sheet-body");
+let editDay = 0, saveTimer = null, resetTimer = null, sheetMsg = "", canSave = true;
+const openSec = { setup:true, subjects:true };
+
+function commit(rebuildEditor){
+  clearTimeout(saveTimer);
+  canSave = store.set("ttb-data", JSON.stringify(DATA));
+  buildModel();
+  if (selected >= DAYS.length) selected = 0;
+  if (editDay >= DAYS.length) editDay = 0;
+  buildGrid(); dayKey = null; render();
+  if (rebuildEditor) renderEditor();
+}
+function commitSoon(){ clearTimeout(saveTimer); saveTimer = setTimeout(() => commit(false), 250); }
+function flash(text){ sheetMsg = text; renderEditor(); }
+
+function selectEl(opts, value, label, onChange){
+  const x = el("select", "field");
+  x.setAttribute("aria-label", label);
+  opts.forEach(([v, l]) => { const o = el("option", "", l); o.value = v; x.append(o); });
+  x.value = value;
+  x.addEventListener("change", () => onChange(x.value));
+  return x;
+}
+function inputEl(value, label, onInput, o = {}){
+  const x = el("input", "field");
+  x.type = o.type || "text"; x.value = value; x.setAttribute("aria-label", label);
+  if (o.ph) x.placeholder = o.ph;
+  if (o.dir) x.dir = o.dir;
+  x.addEventListener("input", () => onInput(x.value, x));
+  return x;
+}
+function button(cls, text, onClick, label){
+  const b = el("button", cls, text);
+  b.type = "button";
+  if (label) b.setAttribute("aria-label", label);
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function addMinutes(hhmm, m){
+  const [h, mm] = hhmm.split(":").map(Number);
+  const x = Math.min(23*60 + 59, h*60 + mm + m);
+  return String(Math.floor(x/60)).padStart(2,"0") + ":" + String(x%60).padStart(2,"0");
+}
+function toggleDay(id){
+  const a = DATA.active;
+  if (a.includes(id)){
+    if (a.length === 1){ flash(T().edit.needDay); return; }
+    DATA.active = a.filter(x => x !== id);
+  } else {
+    DATA.active = DAY_IDS.filter(x => a.includes(x) || x === id);
+  }
+  commit(true);
+}
+function section(key, title, build){
+  const d = el("details", "esection");
+  d.open = openSec[key];
+  d.append(el("summary", "", title));
+  const body = el("div", "esbody");
+  build(body);
+  d.append(body);
+  d.addEventListener("toggle", () => { openSec[key] = d.open; });
+  return d;
+}
+
+function setKind(id, i, v){
+  const arr = DATA.days[id], cur = arr[i];
+  if (v === "free") arr[i] = null;
+  else if (cur) arr[i] = [cur[0], v, cur[2]];
+  else { const k = Object.keys(DATA.subjects)[0]; arr[i] = [k ? [k] : [], v, ""]; }
+  commit(true);
+}
+
+function slotRow(id, i, slot, len){
+  const t = T(), e = t.edit, row = el("div", "erow");
+  const head = el("div", "erow-head");
+  head.append(el("span", "etime", DATA.times[i][0] + "–" + DATA.times[i][1]));
+  head.append(selectEl([["free", t.free], ...TYPE_KEYS.map(k => [k, t.types[k]])], slot ? slot[1] : "free", e.type, v => setKind(id, i, v)));
+  if (i === len - 1) head.append(button("iconx", "×", () => { DATA.days[id].pop(); commit(true); }, e.removeSlot));
+  row.append(head);
+  if (!slot) return row;
+
+  const keys = Object.keys(DATA.subjects);
+  if (!keys.length){ row.append(el("p", "enote", e.needSubject)); }
+  else {
+    const opts = keys.map(k => [k, subjName(k) || "—"]);
+    const names = slot[0].length ? slot[0] : [keys[0]];
+    row.append(selectEl(opts, names[0], e.subject, v => { slot[0][0] = v; commit(false); }));
+    if (names.length > 1){
+      const sub = el("div", "erow-sub");
+      sub.append(selectEl(opts, names[1], e.second, v => { slot[0][1] = v; commit(false); }),
+                 button("iconx", "×", () => { slot[0].length = 1; commit(true); }, e.removeSecond));
+      row.append(sub);
+    } else if (keys.length > 1){
+      row.append(button("ghost small", "+ " + e.addSecond, () => { slot[0][0] = names[0]; slot[0].push(keys.find(k => k !== names[0])); commit(true); }));
+    }
+  }
+  row.append(inputEl(slot[2], e.room, v => { slot[2] = v; commitSoon(); }, { ph:e.roomPh, dir:"ltr" }));
+  return row;
+}
+
+function renderEditor(){
+  const t = T(), e = t.edit, keep = sheetPanel.scrollTop;
+  if (editDay >= DAYS.length) editDay = 0;
+  $("sheet-title").textContent = e.title;
+  $("sheet-done").textContent = e.done;
+  sheetBody.replaceChildren();
+
+  const msg = el("p", "emsg", sheetMsg || (canSave ? "" : e.noSave));
+  msg.setAttribute("role", "status");
+  sheetMsg = "";
+  sheetBody.append(msg);
+
+  /* 1. days and time slots */
+  sheetBody.append(section("setup", e.setupTitle, body => {
+    body.append(el("p", "esubh", e.daysTitle), el("p", "enote lead", e.daysHelp));
+    const chips = el("div", "dchips");
+    chips.setAttribute("role", "group"); chips.setAttribute("aria-label", e.daysTitle);
+    DAY_META.forEach(m => {
+      const b = button("dchip", t.days[m.id][0], () => toggleDay(m.id));
+      b.setAttribute("aria-pressed", String(DATA.active.includes(m.id)));
+      chips.append(b);
+    });
+    body.append(chips, el("p", "esubh", e.timesTitle));
+    const tl = el("div", "elist");
+    DATA.times.forEach((tm, i) => {
+      const row = el("div", "erow erow-times");
+      const note = el("p", "enote");
+      const a = inputEl(tm[0], e.start, () => upd(), { type:"time", dir:"ltr" });
+      const b = inputEl(tm[1], e.end,   () => upd(), { type:"time", dir:"ltr" });
+      const upd = () => {
+        const ok = HHMM.test(a.value) && HHMM.test(b.value) && b.value > a.value;
+        a.classList.toggle("bad", !ok); b.classList.toggle("bad", !ok);
+        note.textContent = ok ? "" : e.badTime;
+        if (ok){ DATA.times[i] = [a.value, b.value]; commitSoon(); }
+      };
+      row.append(el("span", "etime", String(i + 1)), a, b, note);
+      tl.append(row);
+    });
+    body.append(tl);
+    const actions = el("div", "erow-sub");
+    if (DATA.times.length < 8) actions.append(button("ghost small", "+ " + e.addTime, () => {
+      const last = DATA.times[DATA.times.length - 1], s0 = addMinutes(last[1], 10);
+      DATA.times.push([s0, addMinutes(s0, 90)]); commit(true);
+    }));
+    if (DATA.times.length > 1) actions.append(button("ghost small", e.removeTime, () => {
+      DATA.times.pop();
+      DAY_IDS.forEach(id => { if (DATA.days[id].length > DATA.times.length) DATA.days[id].length = DATA.times.length; });
+      commit(true);
+    }));
+    body.append(actions);
+  }));
+
+  /* 2. subjects */
+  sheetBody.append(section("subjects", e.subjectsTitle, body => {
+    const subs = el("div", "elist");
+    Object.keys(DATA.subjects).forEach(k => {
+      const x = DATA.subjects[k], row = el("div", "erow");
+      row.append(inputEl(x.en, e.nameEn, v => { x.en = v; commitSoon(); }, { ph:e.nameEn, dir:"ltr" }));
+      row.append(inputEl(x.ar, e.nameAr, v => { x.ar = v; commitSoon(); }, { ph:e.nameAr, dir:"rtl" }));
+      const used = DAY_IDS.some(d => DATA.days[d].some(sl => sl && sl[0].includes(k)));
+      const del = button("ghost small danger", used ? e.inUse : e.delete, () => { delete DATA.subjects[k]; commit(true); });
+      del.disabled = used;
+      row.append(del);
+      subs.append(row);
+    });
+    body.append(subs, button("ghost", "+ " + e.addSubject, () => { DATA.subjects["s" + Date.now().toString(36)] = { en:"", ar:"" }; commit(true); }));
+  }));
+
+  /* 3. classes of the chosen day */
+  sheetBody.append(el("h3", "esec plain", e.classesTitle));
+  const picker = el("div", "dpick");
+  picker.style.gridTemplateColumns = "repeat(" + DAYS.length + ",1fr)";
+  picker.setAttribute("role", "group"); picker.setAttribute("aria-label", e.day);
+  DAYS.forEach((d, i) => {
+    const b = button("dbtn", d.short, () => { editDay = i; renderEditor(); });
+    b.setAttribute("aria-pressed", String(i === editDay));
+    picker.append(b);
+  });
+  sheetBody.append(picker);
+  const id = DAYS[editDay].id, slots = DATA.days[id];
+  const list = el("div", "elist");
+  slots.forEach((slot, i) => list.append(slotRow(id, i, slot, slots.length)));
+  sheetBody.append(list);
+  if (slots.length < DATA.times.length) sheetBody.append(button("ghost", "+ " + e.addSlot, () => { slots.push(null); commit(true); }));
+
+  /* backup + reset */
+  const det = section("backup", e.backup, body => {
+    const ta = el("textarea", "field mono");
+    ta.rows = 5; ta.spellcheck = false; ta.value = JSON.stringify(DATA); ta.setAttribute("aria-label", e.backup);
+    body.append(el("p", "enote", e.backupHelp), ta, button("ghost small", e.load, () => {
+      try {
+        const d = JSON.parse(ta.value);
+        if (!validData(d)) throw new Error("invalid");
+        DATA = normalize(d); commit(true); flash(e.loadOk);
+      } catch(err){ flash(e.loadBad); }
+    }));
+  });
+  det.classList.add("ebackup");
+  sheetBody.append(det);
+
+  const foot = el("div", "efoot");
+  const rs = button("ghost danger", e.reset, () => {
+    if (rs.dataset.armed){ clearTimeout(resetTimer); DATA = loadDefault(); commit(true); flash(e.resetDone); }
+    else {
+      rs.dataset.armed = "1"; rs.textContent = e.resetConfirm;
+      resetTimer = setTimeout(() => { delete rs.dataset.armed; rs.textContent = e.reset; }, 4000);
+    }
+  });
+  foot.append(rs, el("p", "enote", e.autosave));
+  sheetBody.append(foot);
+
+  sheetPanel.scrollTop = keep;
+}
+
+function openEditor(){
+  editDay = selected; sheetMsg = "";
+  openSec.setup = openSec.subjects = !DAYS.some(d => d.real.length);   // first run: show the setup sections open
+  renderEditor();
+  sheet.hidden = false;
+  document.body.style.overflow = "hidden";
+  $("wrap").inert = true;
+  sheetPanel.scrollTop = 0;
+  $("sheet-done").focus();
+}
+function closeEditor(){
+  sheet.hidden = true;
+  document.body.style.overflow = "";
+  $("wrap").inert = false;
+  $("edit-btn").focus();
+}
+$("edit-btn").addEventListener("click", openEditor);
+$("empty-btn").addEventListener("click", openEditor);
+$("sheet-done").addEventListener("click", closeEditor);
+$("sheet-bg").addEventListener("click", closeEditor);
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !sheet.hidden) closeEditor(); });
+
+/* ---------- main loop ---------- */
+function render(){
+  const n = nowInfo();
+  if (selected >= DAYS.length) selected = 0;
+  if (!userPicked) selected = defaultDay(n);
+  const hasClasses = DAYS.some(d => d.real.length);
+  $("empty").hidden = hasClasses;
+  ["now","sec-day","sec-week"].forEach(id => { $(id).hidden = !hasClasses; });
+  const soonS = soonSession(n);
+  $("today-date").textContent = T().date(n.date);
+  renderNow(n, soonS);
+  updateGrid(n, soonS);
+  renderDay(n, soonS);
+}
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+applyLang();
+setInterval(render, 1000);
+</script>
+</body>
+</html>
