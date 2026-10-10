@@ -353,7 +353,7 @@ const I18N = {
       subjectsTitle:"Subjects", nameEn:"English name", nameAr:"Arabic name", addSubject:"Add subject", delete:"Delete", inUse:"In use",
       timesTitle:"Time slots", start:"Start time", end:"End time", badTime:"The end time must be after the start time.",
       backup:"Backup and restore", backupHelp:"Copy this text somewhere safe to keep a backup. To restore, paste it here and tap Load.", load:"Load",
-      loadOk:"Backup loaded.", loadBad:"That text isn't a valid timetable.",
+      loadOk:"Backup loaded.", loadBad:"That text isn't a valid timetable.", loadWrong:"This backup can't be loaded here. Check that you pasted all of it.",
       reset:"Reset to default", resetConfirm:"Tap again to confirm", resetDone:"Timetable reset to default.",
       autosave:"Changes save automatically on this device.", noSave:"This browser isn't saving changes. Use the backup below to keep them."
     },
@@ -384,7 +384,7 @@ const I18N = {
       subjectsTitle:"المواد", nameEn:"الاسم بالإنجليزية", nameAr:"الاسم بالعربية", addSubject:"إضافة مادة", delete:"حذف", inUse:"قيد الاستخدام",
       timesTitle:"أوقات الحصص", start:"وقت البدء", end:"وقت الانتهاء", badTime:"يجب أن يكون وقت الانتهاء بعد وقت البدء.",
       backup:"نسخة احتياطية واستعادة", backupHelp:"انسخ هذا النص واحفظه كنسخة احتياطية. للاستعادة، الصقه هنا ثم اضغط تحميل.", load:"تحميل",
-      loadOk:"تم تحميل النسخة الاحتياطية.", loadBad:"هذا النص ليس جدولاً صالحاً.",
+      loadOk:"تم تحميل النسخة الاحتياطية.", loadBad:"هذا النص ليس جدولاً صالحاً.", loadWrong:"لا يمكن تحميل هذه النسخة هنا. تأكد من لصقها كاملة.",
       reset:"إعادة الضبط الافتراضي", resetConfirm:"اضغط مرة أخرى للتأكيد", resetDone:"تمت إعادة الجدول إلى الوضع الافتراضي.",
       autosave:"تُحفظ التغييرات تلقائياً على هذا الجهاز.", noSave:"هذا المتصفح لا يحفظ التغييرات. استخدم النسخة الاحتياطية أدناه للاحتفاظ بها."
     },
@@ -973,11 +973,7 @@ function renderEditor(){
     const ta = el("textarea", "field mono");
     ta.rows = 5; ta.spellcheck = false; ta.value = JSON.stringify(DATA); ta.setAttribute("aria-label", e.backup);
     body.append(el("p", "enote", e.backupHelp), ta, button("ghost small", e.load, () => {
-      try {
-        const d = JSON.parse(ta.value);
-        if (!validData(d)) throw new Error("invalid");
-        DATA = normalize(d); commit(true); flash(e.loadOk);
-      } catch(err){ flash(e.loadBad); }
+      loadFromText(ta.value);
     }));
   });
   det.classList.add("ebackup");
@@ -995,6 +991,27 @@ function renderEditor(){
   sheetBody.append(foot);
 
   sheetPanel.scrollTop = keep;
+}
+
+function jsonOf(text){
+  const t = text.replace(/[\u201C\u201D]/g, '"');          // messengers often turn quotes into curly quotes
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  return a >= 0 && b > a ? t.slice(a, b + 1) : t;           // ignore any text around the backup
+}
+/* a backup from the 5-day version becomes a 7-day-capable timetable */
+function convertBackup(d){
+  if (!d || d.v !== 1 || !d.days) return d;
+  const days = {};
+  DAY_IDS.forEach(id => { days[id] = Array.isArray(d.days[id]) ? d.days[id] : []; });
+  return { v:2, times:d.times, subjects:d.subjects, active:DAY_IDS.filter(id => Array.isArray(d.days[id])), days };
+}
+function loadFromText(text){
+  const e = T().edit;
+  let d;
+  try { d = JSON.parse(jsonOf(text)); } catch(err){ flash(e.loadBad); return; }
+  d = convertBackup(d);
+  if (!validData(d)){ flash(e.loadWrong); return; }
+  DATA = normalize(d); commit(true); flash(e.loadOk);
 }
 
 function openEditor(){
