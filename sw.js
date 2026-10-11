@@ -1,8 +1,10 @@
 /* Makes the timetable installable and usable offline.
    Pages are fetched fresh when online (so updates show up) and served from the cache when offline. */
 const CACHE = "timetable-v1";
-const CORE = ["./", "index.html", "blank.html", "manifest.webmanifest", "manifest-blank.webmanifest",
-              "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
+const CORE = ["./", "index.html", "blank.html",
+              "assets/manifest.webmanifest", "assets/manifest-blank.webmanifest",
+              "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png",
+              "assets/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(CORE.map(u => c.add(u)))).then(() => self.skipWaiting()));

@@ -24,9 +24,10 @@ You can use the live application directly in your browser:
 👉 **[mohammedbouabdallah.github.io/timetable/](https://mohammedbouabdallah.github.io/timetable/)**
 
 ### Running Locally
-Since this is a single-file application (`index.html`), no build steps or package managers are required:
+Since this is a static single-page app, no build steps or package managers are required:
 1. Clone or download the repository.
-2. Open `weekly_timetable_blank(1).html` (or rename it to `index.html`) in any modern web browser.
+2. Open `index.html` in any modern web browser, or run a local static server from the repo root.
+3. The PWA icons and manifests are kept under the `assets/` folder for cleaner organization.
 
 ---
 

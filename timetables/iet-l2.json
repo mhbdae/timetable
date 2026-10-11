@@ -1,0 +1,173 @@
+{
+  "v": 1,
+  "times": [
+    [
+      "08:00",
+      "09:30"
+    ],
+    [
+      "09:35",
+      "11:05"
+    ],
+    [
+      "11:10",
+      "12:40"
+    ],
+    [
+      "12:45",
+      "14:15"
+    ],
+    [
+      "14:20",
+      "15:50"
+    ]
+  ],
+  "subjects": {
+    "PS": {
+      "en": "Probabilities & Statistics",
+      "ar": "الاحتمالات والإحصاء"
+    },
+    "ETF": {
+      "en": "Electrotechnics Fundamentals 1",
+      "ar": "أساسيات الكهروتقنية 1"
+    },
+    "EF": {
+      "en": "Electronics Fundamentals 1",
+      "ar": "أساسيات الإلكترونيك 1"
+    },
+    "WV": {
+      "en": "Waves & Vibrations",
+      "ar": "الاهتزازات والأمواج"
+    },
+    "AN": {
+      "en": "Analysis 3",
+      "ar": "التحليل 3"
+    },
+    "PY": {
+      "en": "Python Programming",
+      "ar": "برمجة بايثون"
+    }
+  },
+  "days": {
+    "sat": [
+      [
+        [
+          "PS"
+        ],
+        "directed",
+        "Snv s2"
+      ],
+      [
+        [
+          "ETF"
+        ],
+        "directed",
+        "Snv s2"
+      ],
+      null,
+      [
+        [
+          "PS"
+        ],
+        "lecture",
+        "Mi hall 9"
+      ],
+      [
+        [
+          "ETF"
+        ],
+        "lecture",
+        "Mi hall 9"
+      ]
+    ],
+    "sun": [
+      [
+        [
+          "WV"
+        ],
+        "lecture",
+        "Mi hall 9"
+      ],
+      [
+        [
+          "AN"
+        ],
+        "directed",
+        "Snv s2"
+      ],
+      [
+        [
+          "ETF",
+          "EF"
+        ],
+        "lab",
+        "Mi 2 lab 4 / ss 1 lab 5"
+      ],
+      [
+        [
+          "AN"
+        ],
+        "directed",
+        "Iet s1"
+      ],
+      [
+        [
+          "EF"
+        ],
+        "lecture",
+        "Mi hall 9"
+      ]
+    ],
+    "mon": [
+      [
+        [
+          "WV"
+        ],
+        "lab",
+        "Mi 1 lab 3"
+      ],
+      null,
+      [
+        [
+          "PY"
+        ],
+        "lab",
+        "Sm 3 lab 8"
+      ]
+    ],
+    "tue": [
+      [
+        [
+          "EF"
+        ],
+        "directed",
+        "Snv s3"
+      ],
+      null,
+      [
+        [
+          "PY"
+        ],
+        "lecture",
+        "Fll hall 3"
+      ]
+    ],
+    "wed": [
+      null,
+      [
+        [
+          "WV"
+        ],
+        "directed",
+        "Snv s4"
+      ],
+      [
+        [
+          "AN"
+        ],
+        "lecture",
+        "Eco hall e"
+      ]
+    ]
+  }
+}

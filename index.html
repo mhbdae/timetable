@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#0A0B10" media="(prefers-color-scheme: dark)">
 <title>Weekly Timetable</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%229%22 fill=%22%231A1D2B%22/%3E%3Crect x=%225%22 y=%226.4%22 width=%2222%22 height=%222.6%22 rx=%221.3%22 fill=%22%239097B2%22/%3E%3Crect x=%225%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%23B99BFF%22/%3E%3Crect x=%2213%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%2374ACFF%22/%3E%3Crect x=%2221%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%234FD6A5%22/%3E%3Crect x=%225%22 y=%2219.8%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%2374ACFF%22/%3E%3Crect x=%2221%22 y=%2219.8%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%23B99BFF%22/%3E%3Crect x=%2213.5%22 y=%2220.3%22 width=%225%22 height=%225%22 rx=%221.6%22 fill=%22none%22 stroke=%22%239097B2%22 stroke-width=%221%22 stroke-dasharray=%222 1.5%22/%3E%3C/svg%3E">
-<link rel="manifest" href="manifest-blank.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="assets/manifest-blank.webmanifest">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Timetable">
@@ -288,6 +288,12 @@ html[lang="ar"] .banner h2{font-size:19px;line-height:1.4}
 .esync{margin-top:14px;padding:14px;display:grid;gap:10px;border-radius:16px;border:1px solid var(--edge);background:var(--glass)}
 .esync h3{font-size:16px;font-weight:700}
 .esync .ghost{justify-self:start}
+
+/* saved timetables (read from the repo) */
+.repoload{display:grid;gap:8px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+.repoload p{font-size:13.5px;color:var(--muted)}
+.repoload .brow{display:flex;gap:10px}
+.repoload .field{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -323,6 +329,13 @@ html[lang="ar"] .banner h2{font-size:19px;line-height:1.4}
     <h2 id="empty-title"></h2>
     <p id="empty-text"></p>
     <button type="button" class="done" id="empty-btn"></button>
+    <div class="repoload" id="empty-repo" hidden>
+      <p id="empty-repo-label"></p>
+      <div class="brow">
+        <select class="field" id="empty-repo-select" aria-labelledby="empty-repo-label"></select>
+        <button type="button" class="ghost" id="empty-repo-btn"></button>
+      </div>
+    </div>
   </section>
 
   <section id="now" class="now">
@@ -366,10 +379,14 @@ const AR_MONTHS = ["جانفي","فيفري","مارس","أفريل","ماي","�
 const I18N = {
   en: {
     dir:"ltr", appTitle:"Weekly timetable", language:"Language", langSwitch:"Language",
-    empty:{ title:"Your timetable is empty", text:"Choose your days and time slots, add your subjects, then fill in your classes. It only takes a few minutes.", start:"Set up my timetable" },
+    empty:{ title:"Your timetable is empty", text:"Choose your days and time slots, add your subjects, then fill in your classes. It only takes a few minutes.", start:"Set up my timetable", repo:"Or load a saved timetable" },
     sync:{ title:"A timetable was shared in this link", text:"Load it on this device? It will replace the timetable saved here.", load:"Load it", ignore:"Ignore",
            badTitle:"This sync link couldn't be read", badText:"It may have been cut off when it was copied. Ask for the link again.", ok:"OK", loaded:"Timetable loaded from the link." },
     edit:{
+      repoTitle:"Saved timetables", repoHelp:"Timetables kept as .json files in the site's timetables folder. Pick one to load it on this device.",
+      repoLoading:"Looking for saved timetables…", repoNone:"No saved timetables found. This works when the page is hosted online and has a timetables folder.",
+      repoLoad:"Load selected", repoConfirm:"Tap again to replace this device's timetable", repoOk:"Timetable loaded.", repoFail:"Couldn't load that file.",
+      download:"Download as .json file", downloadHelp:"Save your timetable as a file, then upload it to the timetables folder in your repo to keep it there.",
       syncTitle:"Use on another device", syncHelp:"Open this link on your other device to copy this timetable there. It holds your whole timetable, so only send it to yourself or people you trust.",
       syncShare:"Share sync link", syncCopy:"Copy sync link", syncCopied:"Sync link copied.",
       setupTitle:"Days and time slots", daysTitle:"Days with classes", daysHelp:"Tap to switch a day on or off.",
@@ -401,10 +418,14 @@ const I18N = {
   },
   ar: {
     dir:"rtl", appTitle:"الجدول الأسبوعي", language:"اللغة", langSwitch:"اللغة",
-    empty:{ title:"جدولك فارغ", text:"اختر أيامك وأوقات الحصص، ثم أضف موادك، وبعدها املأ حصصك. لن يستغرق الأمر سوى دقائق.", start:"إعداد الجدول" },
+    empty:{ title:"جدولك فارغ", text:"اختر أيامك وأوقات الحصص، ثم أضف موادك، وبعدها املأ حصصك. لن يستغرق الأمر سوى دقائق.", start:"إعداد الجدول", repo:"أو حمّل جدولاً محفوظاً" },
     sync:{ title:"تمت مشاركة جدول عبر هذا الرابط", text:"هل تريد تحميله على هذا الجهاز؟ سيحل محل الجدول المحفوظ هنا.", load:"تحميل", ignore:"تجاهل",
            badTitle:"تعذرت قراءة رابط المزامنة", badText:"ربما انقطع الرابط عند نسخه. اطلب الرابط مرة أخرى.", ok:"حسناً", loaded:"تم تحميل الجدول من الرابط." },
     edit:{
+      repoTitle:"الجداول المحفوظة", repoHelp:"جداول محفوظة كملفات .json في مجلد timetables بالموقع. اختر واحداً لتحميله على هذا الجهاز.",
+      repoLoading:"جارٍ البحث عن الجداول المحفوظة…", repoNone:"لا توجد جداول محفوظة. يعمل هذا عندما تكون الصفحة مستضافة على الإنترنت ويوجد بها مجلد timetables.",
+      repoLoad:"تحميل المحدد", repoConfirm:"اضغط مرة أخرى لاستبدال جدول هذا الجهاز", repoOk:"تم تحميل الجدول.", repoFail:"تعذر تحميل هذا الملف.",
+      download:"تنزيل كملف .json", downloadHelp:"احفظ جدولك كملف، ثم ارفعه إلى مجلد timetables في مستودعك لتبقيه هناك.",
       syncTitle:"الاستخدام على جهاز آخر", syncHelp:"افتح هذا الرابط على جهازك الآخر لنسخ هذا الجدول إليه. يحتوي الرابط على جدولك كاملاً، لذا أرسله لنفسك أو لأشخاص تثق بهم فقط.",
       syncShare:"مشاركة رابط المزامنة", syncCopy:"نسخ رابط المزامنة", syncCopied:"تم نسخ رابط المزامنة.",
       setupTitle:"الأيام وأوقات الحصص", daysTitle:"أيام الدراسة", daysHelp:"اضغط لتفعيل اليوم أو إلغائه.",
@@ -800,6 +821,7 @@ function applyLang(){
   renderLegend();
   renderEmpty();
   renderBanner();
+  renderEmptyRepo();
   if (!sheet.hidden) renderEditor();
   dayKey = null;                              // force the day list to rebuild in the new language
   render();
@@ -1012,6 +1034,7 @@ function renderEditor(){
   det.classList.add("ebackup");
   sheetBody.append(det);
 
+  sheetBody.append(repoBlock());
   sheetBody.append(syncBlock());
 
   const foot = el("div", "efoot");
@@ -1107,6 +1130,18 @@ $("banner-load").addEventListener("click", () => {
 $("banner-ignore").addEventListener("click", () => { pendingSync = null; bannerState = null; renderBanner(); });
 
 async function checkIncoming(){
+  const q = new URLSearchParams(location.search).get("t");
+  if (q){                                                   // e.g. index.html?t=my-timetable
+    const file = /\.json$/i.test(q) ? q : q + ".json";
+    try {
+      const d = convertBackup(await fetchJSON(TT_DIR + encodeURIComponent(file)));
+      if (!FILE_OK.test(file) || !validData(d)) throw new Error("invalid");
+      pendingSync = d; bannerState = "ask";
+    } catch(err){ pendingSync = null; bannerState = "bad"; }
+    history.replaceState(null, "", location.pathname + location.hash);
+    renderBanner();
+    return;
+  }
   const m = location.hash.match(/^#sync=(.+)$/);
   if (!m) return;
   try {
@@ -1117,6 +1152,102 @@ async function checkIncoming(){
   history.replaceState(null, "", location.pathname + location.search);       // keep the timetable out of the address bar
   renderBanner();
 }
+
+/* ---------- saved timetables: .json files in the site's timetables folder ---------- */
+const TT_DIR = "timetables/";
+const FILE_OK = /^[\w.\- ]+\.json$/i;
+let repoList = null, repoChoice = "", repoArmed = false;
+
+async function fetchJSON(url, ms = 6000){
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  try {
+    const r = await fetch(url, { signal:c.signal, cache:"no-cache" });
+    if (!r.ok) throw new Error("http " + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+const prettyName = file => file.replace(/\.json$/i, "").replace(/[-_]+/g, " ");
+
+async function loadRepoList(){
+  const out = [], seen = new Set();
+  const add = (file, name) => {
+    if (typeof file !== "string" || !FILE_OK.test(file) || file.toLowerCase() === "index.json" || seen.has(file)) return;
+    seen.add(file); out.push({ file, name: name || prettyName(file) });
+  };
+  try {                                                   // 1. an optional index.json with friendly names
+    const idx = await fetchJSON(TT_DIR + "index.json");
+    (idx.timetables || []).forEach(x => x && add(x.file, typeof x.name === "string" ? x.name : ""));
+  } catch(err){}
+  const host = location.hostname.match(/^([^.]+)\.github\.io$/);
+  if (host){                                              // 2. on GitHub Pages: any .json dropped in the folder shows up by itself
+    const seg = location.pathname.split("/")[1];
+    const repo = (!seg || /\.[a-z]+$/i.test(seg)) ? location.hostname : seg;
+    try {
+      const list = await fetchJSON("https://api.github.com/repos/" + host[1] + "/" + repo + "/contents/timetables");
+      (Array.isArray(list) ? list : []).forEach(x => x && x.type === "file" && add(x.name));
+    } catch(err){}
+  }
+  repoList = out;
+  return out;
+}
+
+async function loadRepoFile(file){
+  if (!FILE_OK.test(file)) throw new Error("name");
+  const d = convertBackup(await fetchJSON(TT_DIR + encodeURIComponent(file)));
+  if (!validData(d)) throw new Error("invalid");
+  DATA = normalize(d);
+  commit(true);
+}
+
+function downloadJSON(){
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], { type:"application/json" });
+  const a = el("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "timetable-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function repoBlock(){
+  const e = T().edit, box = el("div", "esync");
+  box.append(el("h3", "", e.repoTitle), el("p", "enote", e.repoHelp));
+  if (repoList === null){ box.append(el("p", "enote", e.repoLoading)); }
+  else if (!repoList.length){ box.append(el("p", "enote", e.repoNone)); }
+  else {
+    const sel = selectEl(repoList.map(x => [x.file, x.name]), repoChoice || repoList[0].file, e.repoTitle, v => { repoChoice = v; });
+    repoChoice = sel.value;
+    const hasClasses = DAYS.some(d => d.real.length);
+    const go = button("ghost", e.repoLoad, async () => {
+      if (hasClasses && !repoArmed){
+        repoArmed = true; go.textContent = e.repoConfirm;
+        setTimeout(() => { repoArmed = false; go.textContent = e.repoLoad; }, 4000);
+        return;
+      }
+      repoArmed = false;
+      try { await loadRepoFile(sel.value); flash(e.repoOk); } catch(err){ flash(err && err.message === "invalid" ? e.loadWrong : e.repoFail); }
+    });
+    box.append(sel, go);
+  }
+  box.append(el("p", "enote", e.downloadHelp), button("ghost", e.download, downloadJSON));
+  return box;
+}
+
+function renderEmptyRepo(){
+  const box = $("empty-repo");
+  if (!box) return;                                       // only the blank version has this on its first screen
+  box.hidden = !(repoList && repoList.length);
+  if (box.hidden) return;
+  const sel = $("empty-repo-select"), keep = sel.value;
+  $("empty-repo-label").textContent = T().empty.repo;
+  sel.replaceChildren();
+  repoList.forEach(x => { const o = el("option", "", x.name); o.value = x.file; sel.append(o); });
+  if (keep) sel.value = keep;
+  $("empty-repo-btn").textContent = T().edit.load;
+}
+if ($("empty-repo-btn")) $("empty-repo-btn").addEventListener("click", async () => {
+  try { await loadRepoFile($("empty-repo-select").value); }
+  catch(err){ $("empty-repo-label").textContent = T().edit.repoFail; }
+});
 
 function openEditor(){
   editDay = selected; sheetMsg = "";
@@ -1158,6 +1289,7 @@ function render(){
 document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
 applyLang();
 checkIncoming();
+loadRepoList().then(() => { renderEmptyRepo(); if (!sheet.hidden) renderEditor(); });
 setInterval(render, 1000);
 
 /* installable app + works offline (only when served over http/https) */
