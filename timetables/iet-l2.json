@@ -1,5 +1,5 @@
 {
-  "v": 1,
+  "v": 2,
   "times": [
     [
       "08:00",
@@ -48,6 +48,13 @@
       "ar": "برمجة بايثون"
     }
   },
+  "active": [
+    "sat",
+    "sun",
+    "mon",
+    "tue",
+    "wed"
+  ],
   "days": {
     "sat": [
       [
@@ -102,13 +109,6 @@
         ],
         "lab",
         "Mi 2 lab 4 / ss 1 lab 5"
-      ],
-      [
-        [
-          "AN"
-        ],
-        "directed",
-        "Iet s1"
       ],
       [
         [
@@ -167,7 +167,17 @@
         ],
         "lecture",
         "Eco hall e"
+      ],
+      null,
+      [
+        [
+          "AN"
+        ],
+        "directed",
+        "Snv s3"
       ]
-    ]
+    ],
+    "thu": [],
+    "fri": []
   }
 }
