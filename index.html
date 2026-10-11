@@ -8,6 +8,11 @@
 <meta name="theme-color" content="#0A0B10" media="(prefers-color-scheme: dark)">
 <title>Weekly Timetable</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%229%22 fill=%22%231A1D2B%22/%3E%3Crect x=%225%22 y=%226.4%22 width=%2222%22 height=%222.6%22 rx=%221.3%22 fill=%22%239097B2%22/%3E%3Crect x=%225%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%23B99BFF%22/%3E%3Crect x=%2213%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%2374ACFF%22/%3E%3Crect x=%2221%22 y=%2212.4%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%234FD6A5%22/%3E%3Crect x=%225%22 y=%2219.8%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%2374ACFF%22/%3E%3Crect x=%2221%22 y=%2219.8%22 width=%226%22 height=%226%22 rx=%222%22 fill=%22%23B99BFF%22/%3E%3Crect x=%2213.5%22 y=%2220.3%22 width=%225%22 height=%225%22 rx=%221.6%22 fill=%22none%22 stroke=%22%239097B2%22 stroke-width=%221%22 stroke-dasharray=%222 1.5%22/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest-blank.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Timetable">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Readex+Pro:wght@300..700&display=swap" rel="stylesheet">
@@ -273,6 +278,16 @@ html[lang="ar"] .empty h2{font-size:22px;line-height:1.4}
 .esec.plain{margin-top:22px}
 .ebackup{margin-top:14px}
 .ebackup .esbody{padding-top:0}
+
+/* sync link */
+.banner{--c:var(--muted);padding:16px;gap:10px}
+.banner h2{font-size:18px;font-weight:720;line-height:1.3}
+.banner p{font-size:14.5px;line-height:1.55;color:var(--muted)}
+.banner .brow{display:flex;flex-wrap:wrap;gap:10px}
+html[lang="ar"] .banner h2{font-size:19px;line-height:1.4}
+.esync{margin-top:14px;padding:14px;display:grid;gap:10px;border-radius:16px;border:1px solid var(--edge);background:var(--glass)}
+.esync h3{font-size:16px;font-weight:700}
+.esync .ghost{justify-self:start}
 </style>
 </head>
 <body>
@@ -294,6 +309,15 @@ html[lang="ar"] .empty h2{font-size:22px;line-height:1.4}
       </button>
     </div>
   </header>
+
+  <section id="banner" class="now banner" role="status" hidden>
+    <h2 id="banner-title"></h2>
+    <p id="banner-text"></p>
+    <div class="brow">
+      <button type="button" class="done" id="banner-load"></button>
+      <button type="button" class="ghost" id="banner-ignore"></button>
+    </div>
+  </section>
 
   <section id="empty" class="now empty" hidden>
     <h2 id="empty-title"></h2>
@@ -343,7 +367,11 @@ const I18N = {
   en: {
     dir:"ltr", appTitle:"Weekly timetable", language:"Language", langSwitch:"Language",
     empty:{ title:"Your timetable is empty", text:"Choose your days and time slots, add your subjects, then fill in your classes. It only takes a few minutes.", start:"Set up my timetable" },
+    sync:{ title:"A timetable was shared in this link", text:"Load it on this device? It will replace the timetable saved here.", load:"Load it", ignore:"Ignore",
+           badTitle:"This sync link couldn't be read", badText:"It may have been cut off when it was copied. Ask for the link again.", ok:"OK", loaded:"Timetable loaded from the link." },
     edit:{
+      syncTitle:"Use on another device", syncHelp:"Open this link on your other device to copy this timetable there. It holds your whole timetable, so only send it to yourself or people you trust.",
+      syncShare:"Share sync link", syncCopy:"Copy sync link", syncCopied:"Sync link copied.",
       setupTitle:"Days and time slots", daysTitle:"Days with classes", daysHelp:"Tap to switch a day on or off.",
       addTime:"Add time slot", removeTime:"Remove last time slot", needDay:"Keep at least one day.", classesTitle:"Classes",
       open:"Edit timetable", title:"Edit timetable", done:"Done", day:"Day", type:"Type",
@@ -374,7 +402,11 @@ const I18N = {
   ar: {
     dir:"rtl", appTitle:"الجدول الأسبوعي", language:"اللغة", langSwitch:"اللغة",
     empty:{ title:"جدولك فارغ", text:"اختر أيامك وأوقات الحصص، ثم أضف موادك، وبعدها املأ حصصك. لن يستغرق الأمر سوى دقائق.", start:"إعداد الجدول" },
+    sync:{ title:"تمت مشاركة جدول عبر هذا الرابط", text:"هل تريد تحميله على هذا الجهاز؟ سيحل محل الجدول المحفوظ هنا.", load:"تحميل", ignore:"تجاهل",
+           badTitle:"تعذرت قراءة رابط المزامنة", badText:"ربما انقطع الرابط عند نسخه. اطلب الرابط مرة أخرى.", ok:"حسناً", loaded:"تم تحميل الجدول من الرابط." },
     edit:{
+      syncTitle:"الاستخدام على جهاز آخر", syncHelp:"افتح هذا الرابط على جهازك الآخر لنسخ هذا الجدول إليه. يحتوي الرابط على جدولك كاملاً، لذا أرسله لنفسك أو لأشخاص تثق بهم فقط.",
+      syncShare:"مشاركة رابط المزامنة", syncCopy:"نسخ رابط المزامنة", syncCopied:"تم نسخ رابط المزامنة.",
       setupTitle:"الأيام وأوقات الحصص", daysTitle:"أيام الدراسة", daysHelp:"اضغط لتفعيل اليوم أو إلغائه.",
       addTime:"إضافة وقت حصة", removeTime:"حذف آخر وقت", needDay:"أبقِ يوماً واحداً على الأقل.", classesTitle:"الحصص",
       open:"تعديل الجدول", title:"تعديل الجدول", done:"تم", day:"اليوم", type:"النوع",
@@ -767,6 +799,7 @@ function applyLang(){
   $("edit-btn").title = t.edit.open;
   renderLegend();
   renderEmpty();
+  renderBanner();
   if (!sheet.hidden) renderEditor();
   dayKey = null;                              // force the day list to rebuild in the new language
   render();
@@ -979,6 +1012,8 @@ function renderEditor(){
   det.classList.add("ebackup");
   sheetBody.append(det);
 
+  sheetBody.append(syncBlock());
+
   const foot = el("div", "efoot");
   const rs = button("ghost danger", e.reset, () => {
     if (rs.dataset.armed){ clearTimeout(resetTimer); DATA = loadDefault(); commit(true); flash(e.resetDone); }
@@ -1012,6 +1047,75 @@ function loadFromText(text){
   d = convertBackup(d);
   if (!validData(d)){ flash(e.loadWrong); return; }
   DATA = normalize(d); commit(true); flash(e.loadOk);
+}
+
+/* ---------- use on another device: a link that carries the timetable ---------- */
+const b64u = bytes => { let x = ""; bytes.forEach(c => { x += String.fromCharCode(c); }); return btoa(x).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const unb64u = str => Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+async function packData(){
+  const raw = new TextEncoder().encode(JSON.stringify(DATA));
+  if (typeof CompressionStream === "function"){
+    try {
+      const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+      return "z" + b64u(new Uint8Array(await new Response(stream).arrayBuffer()));
+    } catch(err){}
+  }
+  return "p" + b64u(raw);
+}
+async function unpackData(str){
+  const bytes = unb64u(str.slice(1));
+  if (str[0] === "z"){
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return JSON.parse(new TextDecoder().decode(await new Response(stream).arrayBuffer()));
+  }
+  if (str[0] === "p") return JSON.parse(new TextDecoder().decode(bytes));
+  throw new Error("format");
+}
+
+function syncBlock(){
+  const e = T().edit, box = el("div", "esync");
+  box.append(el("h3", "", e.syncTitle), el("p", "enote", e.syncHelp));
+  const out = el("input", "field mono");
+  out.readOnly = true; out.hidden = true; out.setAttribute("aria-label", e.syncTitle);
+  const btn = button("ghost", navigator.share ? e.syncShare : e.syncCopy, async () => {
+    const link = location.href.split("#")[0] + "#sync=" + await packData();
+    try { if (navigator.share){ await navigator.share({ title:T().appTitle, url:link }); return; } }
+    catch(err){ if (err && err.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(link); flash(e.syncCopied); return; } catch(err){}
+    out.value = link; out.hidden = false; out.focus(); out.select();      // last resort: show it so it can be copied by hand
+  });
+  box.append(btn, out);
+  return box;
+}
+
+let pendingSync = null, bannerState = null;
+function renderBanner(){
+  const b = $("banner"), t = T().sync;
+  b.hidden = !bannerState;
+  if (!bannerState) return;
+  const ok = bannerState === "ask";
+  $("banner-title").textContent = ok ? t.title : t.badTitle;
+  $("banner-text").textContent = ok ? t.text : t.badText;
+  $("banner-load").textContent = ok ? t.load : t.ok;
+  $("banner-ignore").hidden = !ok;
+  $("banner-ignore").textContent = t.ignore;
+}
+$("banner-load").addEventListener("click", () => {
+  if (bannerState === "ask" && pendingSync){ DATA = normalize(pendingSync); commit(false); }
+  pendingSync = null; bannerState = null; renderBanner();
+});
+$("banner-ignore").addEventListener("click", () => { pendingSync = null; bannerState = null; renderBanner(); });
+
+async function checkIncoming(){
+  const m = location.hash.match(/^#sync=(.+)$/);
+  if (!m) return;
+  try {
+    const d = convertBackup(await unpackData(m[1]));
+    if (!validData(d)) throw new Error("invalid");
+    pendingSync = d; bannerState = "ask";
+  } catch(err){ pendingSync = null; bannerState = "bad"; }
+  history.replaceState(null, "", location.pathname + location.search);       // keep the timetable out of the address bar
+  renderBanner();
 }
 
 function openEditor(){
@@ -1053,7 +1157,13 @@ function render(){
 
 document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
 applyLang();
+checkIncoming();
 setInterval(render, 1000);
+
+/* installable app + works offline (only when served over http/https) */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 </script>
 </body>
 </html>
