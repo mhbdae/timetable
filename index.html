@@ -346,7 +346,10 @@ html[lang="ar"] .banner h2{font-size:19px;line-height:1.4}
         <button type="button" data-lang="en" aria-pressed="true">EN</button>
         <button type="button" data-lang="ar" aria-pressed="false" lang="ar">ع</button>
       </div>
-      <button type="button" class="iconbtn" id="edit-btn">
+      <button type="button" class="iconbtn" id="load-btn" title="Load timetable" aria-label="Load timetable">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v10"/><path d="m8 19 4 4 4-4"/><path d="M4 15v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      </button>
+      <button type="button" class="iconbtn" id="edit-btn" title="Edit timetable" aria-label="Edit timetable">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14.5 7.5l3 3"/></svg>
       </button>
     </div>
@@ -863,6 +866,8 @@ function applyLang(){
   $("sec-day").setAttribute("aria-label", t.secDay);
   $("sec-week").setAttribute("aria-label", t.secWeek);
   $("seg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  $("load-btn").setAttribute("aria-label", t.edit.load || "Load timetable");
+  $("load-btn").title = t.edit.load || "Load timetable";
   updateGridLabels();
   $("edit-btn").setAttribute("aria-label", t.edit.open);
   $("edit-btn").title = t.edit.open;
@@ -1313,6 +1318,7 @@ function closeEditor(){
   $("wrap").inert = false;
   $("edit-btn").focus();
 }
+$("load-btn").addEventListener("click", openEditor);
 $("edit-btn").addEventListener("click", openEditor);
 $("empty-btn").addEventListener("click", openEditor);
 $("sheet-done").addEventListener("click", closeEditor);
