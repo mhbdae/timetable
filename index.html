@@ -196,6 +196,40 @@ html[lang="ar"] .card h4{font-size:17px;line-height:1.45}
 html[lang="ar"] .dayhead h3{font-size:21px}
 html[lang="ar"] .count b{line-height:1.2}
 
+@media (min-width: 960px){
+  body{padding:28px 24px 40px}
+  .wrap{
+    max-width:1200px;
+    grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);
+    grid-template-areas:
+      "header header"
+      "now week"
+      "day week";
+    gap:20px 22px;
+    align-items:start;
+  }
+  header{grid-area:header}
+  #now{grid-area:now}
+  #sec-day{grid-area:day}
+  #sec-week{grid-area:week; position:sticky; top:18px}
+  .panel{padding:14px 14px 18px}
+  .week{column-gap:6px}
+  .times,.col{row-gap:7px}
+  .dlabel{font-size:15px}
+  .card{padding:12px 14px 12px}
+  .dayhead{padding-inline:6px}
+  .list{gap:4px}
+  .item{grid-template-columns:60px 26px 1fr}
+}
+
+@media (min-width: 1200px){
+  .wrap{grid-template-columns:minmax(0,1.2fr) minmax(420px,1fr)}
+  #now{padding:18px 18px 17px}
+  .now h2{font-size:28px}
+  .count b{font-size:32px}
+  .dayhead h3{font-size:22px}
+}
+
 @media (prefers-reduced-motion:reduce){
   .now[data-live] .dot{animation:none}
   .list.swap{animation:none}
