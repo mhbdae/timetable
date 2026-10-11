@@ -166,7 +166,7 @@ header p{color:var(--muted);font-size:15px;font-weight:560;text-align:end;white-
 .item.past .card,.item.past .time,.item.past .freebody{opacity:.5}
 
 /* week overview */
-.panel{border-radius:26px;padding:12px 12px 16px}
+.panel{min-width:0;overflow-x:auto;border-radius:26px;padding:12px 12px 16px}
 .week{display:grid;grid-template-columns:auto repeat(var(--cols,5),1fr);column-gap:4px}
 .times,.col{display:grid;grid-template-rows:30px repeat(var(--rows,5),32px);row-gap:6px;padding:8px 4px}
 .times{padding-inline:2px 6px}
@@ -270,6 +270,12 @@ html[lang="ar"] .count b{line-height:1.2}
   .dayhead h3{font-size:22px}
   .panel{padding:18px 18px 20px}
   #sec-day{padding:18px 20px 12px}
+}
+
+@media (max-width: 400px){
+  header{align-items:flex-start}
+  header .hright{flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:calc(100% - 54px)}
+  header p{order:1;flex:1 0 100%;font-size:13px}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -399,19 +405,19 @@ html[lang="ar"] .banner h2{font-size:19px;line-height:1.4}
 
   <section id="desktop-summary" class="desktop-summary" hidden>
     <div class="summary-item">
-      <span class="summary-label">Classes today</span>
+      <span class="summary-label" id="summary-classes-label">Classes today</span>
       <strong id="summary-classes">0</strong>
     </div>
     <div class="summary-item">
-      <span class="summary-label">Hours left</span>
+      <span class="summary-label" id="summary-hours-label">Hours left</span>
       <strong id="summary-hours">0h</strong>
     </div>
     <div class="summary-item summary-next">
-      <span class="summary-label">Next up</span>
+      <span class="summary-label" id="summary-next-label">Next up</span>
       <strong id="summary-next">—</strong>
     </div>
     <div class="summary-item summary-focus-box">
-      <label class="summary-label" for="focus-select">Focus</label>
+      <label class="summary-label" id="summary-focus-label" for="focus-select">Focus</label>
       <select id="focus-select" class="focus-select">
         <option value="">All subjects</option>
       </select>
@@ -481,6 +487,7 @@ const AR_MONTHS = ["جانفي","فيفري","مارس","أفريل","ماي","�
 const I18N = {
   en: {
     dir:"ltr", appTitle:"Weekly timetable", language:"Language", langSwitch:"Language",
+    summary:{ classes:"Classes today", hours:"Hours left", next:"Next up", focus:"Focus", allSubjects:"All subjects", noClasses:"No classes", noFocusedClasses:"No classes for this subject" },
     empty:{ title:"Your timetable is empty", text:"Choose your days and time slots, add your subjects, then fill in your classes. It only takes a few minutes.", start:"Set up my timetable", repo:"Or load a saved timetable" },
     sync:{ title:"A timetable was shared in this link", text:"Load it on this device? It will replace the timetable saved here.", load:"Load it", ignore:"Ignore",
            badTitle:"This sync link couldn't be read", badText:"It may have been cut off when it was copied. Ask for the link again.", ok:"OK", loaded:"Timetable loaded from the link." },
@@ -520,6 +527,7 @@ const I18N = {
   },
   ar: {
     dir:"rtl", appTitle:"الجدول الأسبوعي", language:"اللغة", langSwitch:"اللغة",
+    summary:{ classes:"حصص اليوم", hours:"الساعات المتبقية", next:"القادم", focus:"المادة", allSubjects:"كل المواد", noClasses:"لا توجد حصص", noFocusedClasses:"لا توجد حصص لهذه المادة" },
     empty:{ title:"جدولك فارغ", text:"اختر أيامك وأوقات الحصص، ثم أضف موادك، وبعدها املأ حصصك. لن يستغرق الأمر سوى دقائق.", start:"إعداد الجدول", repo:"أو حمّل جدولاً محفوظاً" },
     sync:{ title:"تمت مشاركة جدول عبر هذا الرابط", text:"هل تريد تحميله على هذا الجهاز؟ سيحل محل الجدول المحفوظ هنا.", load:"تحميل", ignore:"تجاهل",
            badTitle:"تعذرت قراءة رابط المزامنة", badText:"ربما انقطع الرابط عند نسخه. اطلب الرابط مرة أخرى.", ok:"حسناً", loaded:"تم تحميل الجدول من الرابط." },
@@ -866,7 +874,7 @@ function renderDay(n, soonS){
 
     if (!visible.length){
       const em = el("li", "item free");
-      em.append(el("div", "freebody", focusSubject ? "No classes for this subject" : t.noClasses));
+      em.append(el("div", "freebody", focusSubject ? t.summary.noFocusedClasses : t.summary.noClasses));
       list.append(em);
       return;
     }
@@ -938,6 +946,10 @@ function applyLang(){
   $("seg").setAttribute("aria-label", t.language);
   $("sec-day").setAttribute("aria-label", t.secDay);
   $("sec-week").setAttribute("aria-label", t.secWeek);
+  $("summary-classes-label").textContent = t.summary.classes;
+  $("summary-hours-label").textContent = t.summary.hours;
+  $("summary-next-label").textContent = t.summary.next;
+  $("summary-focus-label").textContent = t.summary.focus;
   $("seg").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
   $("load-btn").setAttribute("aria-label", t.edit.load || "Load timetable");
   $("load-btn").title = t.edit.load || "Load timetable";
@@ -1322,7 +1334,7 @@ function populateFocusSelect(){
   if (!sel) return;
   const value = sel.value || focusSubject || "";
   sel.replaceChildren();
-  const all = el("option", "", "All subjects");
+  const all = el("option", "", T().summary.allSubjects);
   all.value = ""; sel.append(all);
   Object.keys(DATA.subjects || {}).forEach(k => {
     const x = DATA.subjects[k];
@@ -1345,12 +1357,13 @@ function updateSummary(n){
   if (!row) return;
   const today = DAYS.find(d => d.dow === n.dow);
   const todaySessions = today ? today.real : [];
+  const hasClasses = DAYS.some(d => d.real.length);
   const next = findNext(n);
-  const hours = todaySessions.reduce((sum, s) => sum + (s.endM - s.startM), 0) / 60;
+  const hours = todaySessions.reduce((sum, s) => sum + Math.max(0, s.endM * 60 - n.secs), 0) / 3600;
   $("summary-classes").textContent = String(todaySessions.length);
-  $("summary-hours").textContent = hours > 0 ? hours.toFixed(1) + "h" : "0h";
-  $("summary-next").textContent = next ? (next.s.title + " · " + next.s.start + " · " + next.s.day.short) : "No classes";
-  row.hidden = !DATA || !DAYS.length || !hasVisibleDesktopSummary();
+  $("summary-hours").textContent = hours > 0 ? hours.toFixed(1) + T().unit.h : "0" + T().unit.h;
+  $("summary-next").textContent = next ? (next.s.title + " · " + next.s.start + " · " + next.s.day.short) : T().summary.noClasses;
+  row.hidden = !DATA || !hasClasses || !hasVisibleDesktopSummary();
 }
 
 function hasVisibleDesktopSummary(){
