@@ -87,13 +87,14 @@ header p{color:var(--muted);font-size:15px;font-weight:560;text-align:end;white-
 .seg button:active{transform:scale(.94)}
 
 /* glass surfaces */
-.now,.panel,.card{
-  background:var(--glass);border:1px solid var(--edge);
-  -webkit-backdrop-filter:blur(26px) saturate(125%);backdrop-filter:blur(26px) saturate(125%);
-  box-shadow:inset 0 1px 0 var(--hi),var(--shadow);
+.now,.panel,.card,.logo,.seg,.iconbtn,.erow,.esync,.dchip,.dbtn,.sheet-panel,.banner{
+  background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.04)), var(--glass);
+  border:1px solid rgba(var(--fg),.12);
+  -webkit-backdrop-filter:blur(18px) saturate(135%);backdrop-filter:blur(18px) saturate(135%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 18px 32px -26px rgba(15,17,23,.45);
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .now,.panel,.card{background:var(--solid)}
+  .now,.panel,.card,.logo,.seg,.iconbtn,.erow,.esync,.dchip,.dbtn,.sheet-panel,.banner{background:var(--solid)}
 }
 
 /* now card */
@@ -203,15 +204,43 @@ html[lang="ar"] .count b{line-height:1.2}
     grid-template-columns:repeat(12,minmax(0,1fr));
     grid-template-areas:
       "header header header header header header header header header header header header"
+      "summary summary summary summary summary summary summary summary summary summary summary summary"
       "now now now now now now week week week week week week"
       "day day day day day day day day day day day day";
     gap:20px 22px;
     align-items:start;
   }
   header{grid-area:header; grid-column:1 / -1}
+  #desktop-summary{grid-area:summary; grid-column:1 / -1}
   #now{grid-area:now; grid-column:1 / span 6}
   #sec-week{grid-area:week; grid-column:7 / span 6; position:sticky; top:18px}
   #sec-day{grid-area:day; grid-column:1 / -1}
+
+  .desktop-summary{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:12px;
+    padding:12px 14px;
+    border-radius:22px;
+    background:var(--glass);
+    border:1px solid var(--edge);
+    -webkit-backdrop-filter:blur(24px) saturate(125%);
+    backdrop-filter:blur(24px) saturate(125%);
+    box-shadow:inset 0 1px 0 var(--hi),var(--shadow);
+  }
+  .summary-item{
+    display:grid;
+    gap:4px;
+    padding:12px 14px;border-radius:16px;background:rgba(var(--fg),.03);border:1px solid rgba(var(--fg),.06)
+  }
+  .summary-label{font-size:12px;font-weight:640;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .summary-item strong{font-size:18px;font-weight:720;letter-spacing:-.02em;line-height:1.2}
+  .summary-next strong{font-size:15px;line-height:1.35}
+  .summary-focus-box{align-content:start}
+  .focus-select{
+    appearance:none;border:1px solid var(--edge);background:rgba(var(--fg),.04);color:var(--text);
+    font:inherit;font-size:13px;font-weight:620;padding:8px 10px;border-radius:10px;outline:none;
+  }
 
   #sec-day{
     padding:16px 18px 10px;
@@ -367,6 +396,27 @@ html[lang="ar"] .banner h2{font-size:19px;line-height:1.4}
       </button>
     </div>
   </header>
+
+  <section id="desktop-summary" class="desktop-summary" hidden>
+    <div class="summary-item">
+      <span class="summary-label">Classes today</span>
+      <strong id="summary-classes">0</strong>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Hours left</span>
+      <strong id="summary-hours">0h</strong>
+    </div>
+    <div class="summary-item summary-next">
+      <span class="summary-label">Next up</span>
+      <strong id="summary-next">—</strong>
+    </div>
+    <div class="summary-item summary-focus-box">
+      <label class="summary-label" for="focus-select">Focus</label>
+      <select id="focus-select" class="focus-select">
+        <option value="">All subjects</option>
+      </select>
+    </div>
+  </section>
 
   <section id="banner" class="now banner" role="status" hidden>
     <h2 id="banner-title"></h2>
@@ -782,22 +832,24 @@ function renderDay(n, soonS){
   const dayIndex = DAYS.indexOf(day);
   const nextSchoolIndex = defaultDay(n);
   const isPastDay = dayIndex < nextSchoolIndex;
-  const states = day.sessions.map(s => {
+  const visible = getVisibleSessions(day);
+  const states = visible.map(s => {
     if (!isToday && !isPastDay) return "-";
     if (!isToday && isPastDay) return "p";
     if (n.mins >= s.endM) return "p";
     if (n.mins >= s.startM) return "l";
     return s === soonS ? "s" : "-";
   });
-  const key = lang + selected + (isToday ? "T" : "") + states.join("");
+  const key = lang + selected + (isToday ? "T" : "") + focusSubject + states.join("");
 
   if (key !== dayKey){
     dayKey = key; dyn = {};
     const head = $("dayhead");
     const h3 = el("h3", "", day.name);
     if (isToday) h3.append(el("span", "today-pill", t.today));
-    const first = day.real[0], last = day.real[day.real.length-1];
-    const [num, word] = t.classCount(day.real.length);
+    const dayReal = visible.filter(s => s.type);
+    const first = dayReal[0], last = dayReal[dayReal.length-1];
+    const [num, word] = t.classCount(dayReal.length);
     const count = el("span");
     count.append(el("b", "", num), word);
     const stats = el("div", "stats");
@@ -811,7 +863,15 @@ function renderDay(n, soonS){
       list.classList.remove("swap"); void list.offsetWidth; list.classList.add("swap");
       lastSelected = selected;
     }
-    day.sessions.forEach((s, i) => {
+
+    if (!visible.length){
+      const em = el("li", "item free");
+      em.append(el("div", "freebody", focusSubject ? "No classes for this subject" : t.noClasses));
+      list.append(em);
+      return;
+    }
+
+    visible.forEach((s, i) => {
       const st = states[i];
       const li = el("li", "item" + (s.type ? " t-" + s.type : " free") + (st === "p" ? " past" : "") + (st === "l" ? " live" : "") + (st === "s" ? " soon" : ""));
       if (st === "l") li.setAttribute("aria-current", "true");
@@ -888,6 +948,7 @@ function applyLang(){
   renderEmpty();
   renderBanner();
   renderEmptyRepo();
+  populateFocusSelect();
   if (!sheet.hidden) renderEditor();
   dayKey = null;                              // force the day list to rebuild in the new language
   render();
@@ -899,6 +960,11 @@ $("seg").addEventListener("click", e => {
   lang = b.dataset.lang;
   store.set("ttb-lang", lang);
   applyLang();
+});
+$("focus-select")?.addEventListener("change", e => {
+  focusSubject = e.target.value;
+  dayKey = null;
+  render();
 });
 
 /* ---------- editor ---------- */
@@ -1089,9 +1155,25 @@ function renderEditor(){
   sheetBody.append(list);
   if (slots.length < DATA.times.length) sheetBody.append(button("ghost", "+ " + e.addSlot, () => { slots.push(null); commit(true); }));
 
+  const loadQuick = el("div", "erow-sub");
+  const backupLoad = button("ghost", e.load + " backup", () => {
+    const ta = document.querySelector("#backup-json");
+    if (ta){ ta.focus(); ta.scrollIntoView({ behavior:"smooth", block:"center" }); }
+  });
+  const repoLoad = button("ghost", e.repoLoad, async () => {
+    const sel = document.querySelector("#saved-timetable-select");
+    if (!sel || !sel.value) return;
+    try { await loadRepoFile(sel.value); flash(e.repoOk); }
+    catch(err){ flash(err && err.message === "invalid" ? e.loadWrong : e.repoFail); }
+  });
+  loadQuick.append(backupLoad);
+  if (repoList && repoList.length) loadQuick.append(repoLoad);
+  sheetBody.append(loadQuick);
+
   /* backup + reset */
   const det = section("backup", e.backup, body => {
     const ta = el("textarea", "field mono");
+    ta.id = "backup-json";
     ta.rows = 5; ta.spellcheck = false; ta.value = JSON.stringify(DATA); ta.setAttribute("aria-label", e.backup);
     body.append(el("p", "enote", e.backupHelp), ta, button("ghost small", e.load, () => {
       loadFromText(ta.value);
@@ -1234,6 +1316,47 @@ async function fetchJSON(url, ms = 6000){
 }
 const prettyName = file => file.replace(/\.json$/i, "").replace(/[-_]+/g, " ");
 
+let focusSubject = "";
+function populateFocusSelect(){
+  const sel = $("focus-select");
+  if (!sel) return;
+  const value = sel.value || focusSubject || "";
+  sel.replaceChildren();
+  const all = el("option", "", "All subjects");
+  all.value = ""; sel.append(all);
+  Object.keys(DATA.subjects || {}).forEach(k => {
+    const x = DATA.subjects[k];
+    const o = el("option", "", x && (x[lang] || x.en || x.ar) ? (x[lang] || x.en || x.ar) : k);
+    o.value = k;
+    sel.append(o);
+  });
+  if (value && [...sel.options].some(o => o.value === value)) sel.value = value;
+  else sel.value = "";
+  focusSubject = sel.value;
+}
+
+function getVisibleSessions(day){
+  if (!day) return [];
+  return day.sessions.filter(s => !focusSubject || (Array.isArray(s.subj) && s.subj.includes(focusSubject)) || (s.subj && s.subj === focusSubject));
+}
+
+function updateSummary(n){
+  const row = $("desktop-summary");
+  if (!row) return;
+  const today = DAYS.find(d => d.dow === n.dow);
+  const todaySessions = today ? today.real : [];
+  const next = findNext(n);
+  const hours = todaySessions.reduce((sum, s) => sum + (s.endM - s.startM), 0) / 60;
+  $("summary-classes").textContent = String(todaySessions.length);
+  $("summary-hours").textContent = hours > 0 ? hours.toFixed(1) + "h" : "0h";
+  $("summary-next").textContent = next ? (next.s.title + " · " + next.s.start + " · " + next.s.day.short) : "No classes";
+  row.hidden = !DATA || !DAYS.length || !hasVisibleDesktopSummary();
+}
+
+function hasVisibleDesktopSummary(){
+  return window.innerWidth >= 960;
+}
+
 async function loadRepoList(){
   const out = [], seen = new Set();
   const add = (file, name) => {
@@ -1281,6 +1404,7 @@ function repoBlock(){
   else if (!repoList.length){ box.append(el("p", "enote", e.repoNone)); }
   else {
     const sel = selectEl(repoList.map(x => [x.file, x.name]), repoChoice || repoList[0].file, e.repoTitle, v => { repoChoice = v; });
+    sel.id = "saved-timetable-select";
     repoChoice = sel.value;
     const hasClasses = DAYS.some(d => d.real.length);
     const go = button("ghost", e.repoLoad, async () => {
@@ -1339,6 +1463,22 @@ $("sheet-bg").addEventListener("click", closeEditor);
 document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !sheet.hidden) closeEditor(); });
 
 /* ---------- main loop ---------- */
+let lastNotificationKey = "";
+function maybeNotifyNextClass(n){
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const next = findNext(n);
+  if (!next || next.off !== 0) return;
+  const secondsLeft = next.s.startM * 60 - n.secs;
+  if (secondsLeft > 15 * 60 || secondsLeft <= 0) return;
+  const key = next.s.day.id + ":" + next.s.start + ":" + next.s.title;
+  if (key === lastNotificationKey) return;
+  lastNotificationKey = key;
+  new Notification("Next class", {
+    body: next.s.title + " starts at " + next.s.start + " in " + Math.ceil(secondsLeft / 60) + " min",
+    tag: key
+  });
+}
+
 function render(){
   const n = nowInfo();
   if (selected >= DAYS.length) selected = 0;
@@ -1349,8 +1489,10 @@ function render(){
   const soonS = soonSession(n);
   $("today-date").textContent = T().date(n.date);
   renderNow(n, soonS);
+  updateSummary(n);
   updateGrid(n, soonS);
   renderDay(n, soonS);
+  maybeNotifyNextClass(n);
 }
 
 document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
